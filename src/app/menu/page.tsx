@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/Header';
-import { cookies } from 'next/headers';
+import { getRole } from '@/lib/actions/auth';
 import type { UserRole } from '@/lib/types';
 import { getMenuItems } from '@/lib/actions/menu';
 import { MenuList } from '@/components/menu/MenuList';
@@ -16,8 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 
 export default async function MenuPage() {
-  const cookieStore = cookies();
-  const role = (cookieStore.get('role')?.value || 'Staff') as UserRole;
+  const role = await getRole();
   const menuItems = await getMenuItems();
 
   return (

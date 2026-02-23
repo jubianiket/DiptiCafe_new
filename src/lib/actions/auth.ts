@@ -9,3 +9,8 @@ export async function switchRole(role: UserRole) {
     path: '/',
   });
 }
+
+export async function getRole(): Promise<UserRole> {
+    const cookieStore = cookies();
+    return (cookieStore.get('role')?.value || 'Staff') as UserRole;
+}

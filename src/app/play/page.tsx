@@ -1,12 +1,11 @@
 import { Header } from '@/components/layout/Header';
-import { cookies } from 'next/headers';
+import { getRole } from '@/lib/actions/auth';
 import type { UserRole } from '@/lib/types';
 import { getActivePlaySessions } from '@/lib/actions/play';
 import { PlayClientPage } from '@/components/play/PlayClientPage';
 
 export default async function PlayPage() {
-  const cookieStore = cookies();
-  const role = (cookieStore.get('role')?.value || 'Staff') as UserRole;
+  const role = await getRole();
   const activeSessions = await getActivePlaySessions();
 
   return (

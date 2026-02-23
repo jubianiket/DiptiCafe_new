@@ -2,7 +2,7 @@ import { Header } from '@/components/layout/Header';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { getOrders, getDailySummary } from '@/lib/actions/orders';
 import type { OrderStatus } from '@/lib/types';
-import { cookies } from 'next/headers';
+import { getRole } from '@/lib/actions/auth';
 import type { UserRole } from '@/lib/types';
 
 export default async function Home({
@@ -11,8 +11,7 @@ export default async function Home({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const status = searchParams.status as OrderStatus | undefined;
-  const cookieStore = cookies();
-  const role = (cookieStore.get('role')?.value || 'Staff') as UserRole;
+  const role = await getRole();
   
   const orders = await getOrders({ status });
   const summary = await getDailySummary();
