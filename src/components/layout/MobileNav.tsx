@@ -8,7 +8,13 @@ import {
   Menu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 export function MobileNav() {
@@ -30,14 +36,18 @@ export function MobileNav() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <nav className="grid gap-2 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 text-lg font-semibold mb-4"
-                >
-                  <Coffee className="h-6 w-6 text-primary" />
-                  <span>Dipti’s Orders</span>
-                </Link>
+              <SheetHeader>
+                <SheetTitle>
+                  <Link
+                    href="/"
+                    className="flex items-center gap-2 text-lg font-semibold"
+                  >
+                    <Coffee className="h-6 w-6 text-primary" />
+                    <span>Dipti’s Orders</span>
+                  </Link>
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="grid gap-2 text-lg font-medium mt-4">
                 {navItems.map(item => (
                     <Link
                         key={item.label}
