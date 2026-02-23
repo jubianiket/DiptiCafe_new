@@ -9,9 +9,9 @@ interface SalesSummaryProps {
 export function SalesSummary({ summary }: SalesSummaryProps) {
   const { total_orders, total_revenue } = summary;
 
-  const formattedRevenue = new Intl.NumberFormat('en-US', {
+  const formattedRevenue = new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
   }).format(total_revenue);
 
   return (
@@ -24,7 +24,7 @@ export function SalesSummary({ summary }: SalesSummaryProps) {
             <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formattedRevenue}</div>
+            <div className="text-2xl font-bold">{formattedRevenue.replace('₹', 'Rs. ')}</div>
             <p className="text-xs text-muted-foreground">From paid orders today</p>
           </CardContent>
         </Card>

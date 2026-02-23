@@ -115,14 +115,14 @@ export function OrderCard({ order, role }: OrderCardProps) {
               <span>
                 {item.quantity}x {item.item_name}
               </span>
-              <span>${(item.price * item.quantity).toFixed(2)}</span>
+              <span>Rs. {(item.price * item.quantity).toFixed(2)}</span>
             </li>
           ))}
         </ul>
         <Separator />
         <div className="flex justify-between font-bold text-foreground">
             <span>Total</span>
-            <span>${order.total_amount.toFixed(2)}</span>
+            <span>Rs. {order.total_amount.toFixed(2)}</span>
         </div>
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row gap-2 pt-4">

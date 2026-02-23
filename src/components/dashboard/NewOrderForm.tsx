@@ -132,7 +132,7 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
       <div className="mt-auto pt-6 border-t space-y-4">
         <div className="flex justify-between items-center text-lg font-bold">
             <span>Total:</span>
-            <span>${total.toFixed(2)}</span>
+            <span>Rs. {total.toFixed(2)}</span>
         </div>
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? <Loader className="animate-spin" /> : 'Create Order'}
