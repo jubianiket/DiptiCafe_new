@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ export function UploadMenuForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -24,6 +26,7 @@ export function UploadMenuForm() {
       } else {
         toast({ title: 'Upload Successful', description: 'Menu items have been added.' });
         formRef.current?.reset();
+        router.refresh();
       }
     });
   };

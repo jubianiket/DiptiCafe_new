@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import type { PlaySession, TableType } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,10 +20,10 @@ interface PlayClientPageProps {
   initialActiveSessions: PlaySession[];
 }
 
-export function PlayClientPage({ initialActiveSessions }: PlayClientPageProps) {
-  const [sessions, setSessions] = useState<PlaySession[]>(initialActiveSessions);
+export function PlayClientPage({ initialActiveSessions: sessions }: PlayClientPageProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const router = useRouter();
 
   const getActiveSession = (tableType: TableType) => {
     return sessions.find(s => s.table_type === tableType && s.status === 'active');
@@ -34,8 +35,8 @@ export function PlayClientPage({ initialActiveSessions }: PlayClientPageProps) {
       if (result.error || !result.session) {
         toast({ title: 'Error', description: result.error || 'Could not start session.', variant: 'destructive' });
       } else {
-        setSessions(prev => [...prev, result.session!]);
         toast({ title: 'Session Started', description: `${TABLE_CONFIG[tableType].name} session has begun.` });
+        router.refresh();
       }
     });
   };
@@ -47,7 +48,6 @@ export function PlayClientPage({ initialActiveSessions }: PlayClientPageProps) {
         toast({ title: 'Error', description: result.error || 'Could not end session.', variant: 'destructive' });
       } else {
         const endedSession = result.session;
-        setSessions(prev => prev.filter(s => s.id !== endedSession.id));
         
         // Calculate duration and cost
         const startTime = new Date(endedSession.start_time);
@@ -68,6 +68,7 @@ export function PlayClientPage({ initialActiveSessions }: PlayClientPageProps) {
           ),
           duration: 10000,
         });
+        router.refresh();
       }
     });
   };

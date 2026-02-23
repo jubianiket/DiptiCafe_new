@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ShieldCheck, Users } from 'lucide-react';
 
 import {
@@ -19,10 +20,12 @@ interface RoleSwitcherProps {
 
 export function RoleSwitcher({ currentRole }: RoleSwitcherProps) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const onRoleChange = (role: UserRole) => {
-    startTransition(() => {
-      switchRole(role);
+    startTransition(async () => {
+      await switchRole(role);
+      router.refresh();
     });
   };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +22,7 @@ type FormValues = z.infer<typeof formSchema>;
 export function NewMenuItemForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -40,6 +42,7 @@ export function NewMenuItemForm() {
       } else {
         toast({ title: 'Success', description: 'New menu item created.' });
         form.reset();
+        router.refresh();
       }
     });
   };

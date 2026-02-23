@@ -2,7 +2,6 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { revalidatePath } from 'next/cache';
 import type { PlaySession, TableType } from '@/lib/types';
 
 function getSupabaseClient() {
@@ -73,7 +72,6 @@ export async function startPlaySession(tableType: TableType) {
         return { error: 'Database error starting session.' };
     }
 
-    revalidatePath('/play');
     return { success: true, session: data };
 }
 
@@ -91,6 +89,5 @@ export async function endPlaySession(id: string) {
         return { error: 'Database error ending session.' };
     }
 
-    revalidatePath('/play');
     return { success: true, session: data };
 }

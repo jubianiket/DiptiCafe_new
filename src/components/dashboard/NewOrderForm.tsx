@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,6 +38,7 @@ interface NewOrderFormProps {
 export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -78,6 +80,7 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
         toast({ title: 'Success', description: 'New order created.' });
         form.reset();
         onFormSubmit();
+        router.refresh();
       }
     });
   };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Card,
@@ -67,6 +68,7 @@ const statusInfo: Record<
 
 export function OrderCard({ order, role }: OrderCardProps) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const { toast } = useToast();
   const CurrentStatusIcon = statusInfo[order.status].icon;
   const [timeAgo, setTimeAgo] = useState('');
@@ -93,6 +95,7 @@ export function OrderCard({ order, role }: OrderCardProps) {
         toast({ title: 'Error', description: result.error, variant: 'destructive' });
       } else {
         toast({ title: 'Success', description: `Order marked as ${status.toLowerCase()}.` });
+        router.refresh();
       }
     });
   };
@@ -104,6 +107,7 @@ export function OrderCard({ order, role }: OrderCardProps) {
         toast({ title: 'Error', description: result.error, variant: 'destructive' });
       } else {
         toast({ title: 'Success', description: 'Order deleted successfully.' });
+        router.refresh();
       }
     });
   }

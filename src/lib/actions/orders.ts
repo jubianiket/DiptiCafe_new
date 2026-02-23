@@ -2,9 +2,8 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import type { OrderStatus, DailySummary, Order, OrderItem } from '@/lib/types';
+import type { OrderStatus, DailySummary, Order } from '@/lib/types';
 
 // Schema for items coming from the form
 const formItemSchema = z.object({
@@ -118,7 +117,6 @@ export async function createOrder(formData: FormData) {
     return { error: { form: ['Failed to save order items. Order creation was rolled back.'] } };
   }
 
-  revalidatePath('/');
   return { success: true };
 }
 
@@ -177,7 +175,6 @@ export async function updateOrderStatus(id: string, status: OrderStatus) {
     console.error('Failed to update order status:', error);
     return { error: 'Database error.' };
   }
-  revalidatePath('/');
   return { success: true };
 }
 
@@ -189,7 +186,6 @@ export async function deleteOrder(id: string) {
     console.error('Failed to delete order:', error);
     return { error: 'Database error.' };
   }
-  revalidatePath('/');
   return { success: true };
 }
 
@@ -249,6 +245,5 @@ export async function addItemsToOrder(orderId: string, formData: FormData) {
     return { error: { form: ['Failed to update order total. Please check order details manually.'] } };
   }
 
-  revalidatePath('/');
   return { success: true };
 }

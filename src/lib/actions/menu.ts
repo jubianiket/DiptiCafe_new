@@ -2,7 +2,6 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { MenuItem } from '@/lib/types';
 import * as xlsx from 'xlsx';
@@ -72,7 +71,6 @@ export async function createMenuItem(formData: FormData) {
     return { error: { form: 'Failed to create menu item. Please try again.' } };
   }
 
-  revalidatePath('/menu');
   return { success: true };
 }
 
@@ -119,7 +117,6 @@ export async function uploadMenuItems(formData: FormData) {
       return { error: 'Failed to upload menu items. Please check the data and try again.' };
     }
 
-    revalidatePath('/menu');
     return { success: true };
   } catch (e) {
     console.error('File upload error:', e);
