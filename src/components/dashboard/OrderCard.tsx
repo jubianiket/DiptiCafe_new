@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useTransition, useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Card,
@@ -68,6 +68,11 @@ export function OrderCard({ order, role }: OrderCardProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const CurrentStatusIcon = statusInfo[order.status].icon;
+  const [timeAgo, setTimeAgo] = useState('');
+
+  useEffect(() => {
+    setTimeAgo(formatDistanceToNow(new Date(order.created_at), { addSuffix: true }));
+  }, [order.created_at]);
 
   const handleUpdateStatus = (status: OrderStatus) => {
     startTransition(async () => {
@@ -98,7 +103,7 @@ export function OrderCard({ order, role }: OrderCardProps) {
             <div>
                 <CardTitle>{order.customer_name || `Table ${order.table_no}`}</CardTitle>
                 <CardDescription>
-                {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
+                {timeAgo}
                 </CardDescription>
             </div>
             <Badge variant={statusInfo[order.status].badgeVariant}>
