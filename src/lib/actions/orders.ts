@@ -76,7 +76,7 @@ export async function createOrder(formData: FormData) {
   }
   
   if (!validation.data.table_no && !validation.data.customer_name) {
-      return { error: { form: 'Either Table Number or Customer Name must be provided.' } };
+      return { error: { form: ['Either Table Number or Customer Name must be provided.'] } };
   }
 
   const { items, ...orderData } = validation.data;
@@ -98,7 +98,7 @@ export async function createOrder(formData: FormData) {
 
   if (orderError) {
     console.error('Supabase order insert error:', orderError.message);
-    return { error: { form: 'Failed to create order. Please try again.' } };
+    return { error: { form: ['Failed to create order. Please try again.'] } };
   }
 
   // 2. Prepare and insert order items
@@ -115,7 +115,7 @@ export async function createOrder(formData: FormData) {
     console.error('Supabase items insert error:', itemsError.message);
     // Attempt to roll back by deleting the order
     await supabase.from('orders').delete().eq('id', newOrder.id);
-    return { error: { form: 'Failed to save order items. Order creation was rolled back.' } };
+    return { error: { form: ['Failed to save order items. Order creation was rolled back.'] } };
   }
 
   revalidatePath('/');
@@ -123,25 +123,27 @@ export async function createOrder(formData: FormData) {
 }
 
 export async function getOrders({ status }: { status?: OrderStatus }): Promise<Order[]> {
-  const supabase = getSupabaseClient();
-  let query = supabase.from('orders').select('*, items:order_items(*)').order('created_at', { ascending: false });
-
-  if (status) {
-    query = query.eq('status', status);
-  }
-
-  const { data: ordersData, error: ordersError } = await query;
-
-  if (ordersError) {
-    console.error('Failed to fetch orders:', ordersError.message);
-    return [];
-  }
-  if (!ordersData) {
+    const supabase = getSupabaseClient();
+    let query = supabase.from('orders')
+      .select('*, items:order_items(*)')
+      .order('created_at', { ascending: false });
+  
+    if (status) {
+      query = query.eq('status', status);
+    }
+  
+    const { data: ordersData, error: ordersError } = await query;
+  
+    if (ordersError) {
+      console.error('Failed to fetch orders:', ordersError.message);
       return [];
+    }
+    if (!ordersData) {
+        return [];
+    }
+  
+    return ordersData as Order[];
   }
-
-  return ordersData as Order[];
-}
 
 export async function getDailySummary(): Promise<DailySummary> {
   const supabase = getSupabaseClient();
@@ -187,6 +189,66 @@ export async function deleteOrder(id: string) {
     console.error('Failed to delete order:', error);
     return { error: 'Database error.' };
   }
+  revalidatePath('/');
+  return { success: true };
+}
+
+export async function addItemsToOrder(orderId: string, formData: FormData) {
+  const rawData = {
+    items: JSON.parse(formData.get('items') as string),
+  };
+
+  const itemsSchema = z.object({ items: z.array(formItemSchema).min(1, 'At least one new item is required.') });
+  const validation = itemsSchema.safeParse({ items: rawData.items });
+
+  if (!validation.success) {
+    return { error: validation.error.flatten().fieldErrors };
+  }
+
+  const supabase = getSupabaseClient();
+  
+  // 1. Get current order to find its total
+  const { data: existingOrder, error: fetchError } = await supabase
+    .from('orders')
+    .select('total_amount')
+    .eq('id', orderId)
+    .single();
+
+  if (fetchError || !existingOrder) {
+    console.error('Failed to fetch existing order:', fetchError?.message);
+    return { error: { form: ['Could not find the order to update.'] } };
+  }
+
+  const newItems = validation.data.items;
+  const newItemsTotal = newItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  // 2. Prepare and insert new order items
+  const newOrderItemsData = newItems.map(item => ({
+    order_id: orderId,
+    item_name: item.item_name,
+    quantity: item.quantity,
+    price: item.price,
+  }));
+
+  const { error: itemsError } = await supabase.from('order_items').insert(newOrderItemsData);
+
+  if (itemsError) {
+    console.error('Supabase add items error:', itemsError.message);
+    return { error: { form: ['Failed to add new items to the order.'] } };
+  }
+
+  // 3. Update the total amount on the order
+  const newTotalAmount = existingOrder.total_amount + newItemsTotal;
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({ total_amount: newTotalAmount })
+    .eq('id', orderId);
+  
+  if (updateError) {
+    console.error('Supabase update total error:', updateError.message);
+    return { error: { form: ['Failed to update order total. Please check order details manually.'] } };
+  }
+
   revalidatePath('/');
   return { success: true };
 }

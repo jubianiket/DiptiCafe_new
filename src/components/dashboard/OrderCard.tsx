@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { EditOrderSheet } from './EditOrderSheet';
 
 interface OrderCardProps {
   order: Order;
@@ -71,7 +72,18 @@ export function OrderCard({ order, role }: OrderCardProps) {
   const [timeAgo, setTimeAgo] = useState('');
 
   useEffect(() => {
-    setTimeAgo(formatDistanceToNow(new Date(order.created_at), { addSuffix: true }));
+    const date = new Date(order.created_at);
+    if (!isNaN(date.getTime())) {
+      setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));
+    }
+
+    const interval = setInterval(() => {
+      if (!isNaN(date.getTime())) {
+        setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
   }, [order.created_at]);
 
   const handleUpdateStatus = (status: OrderStatus) => {
@@ -141,6 +153,9 @@ export function OrderCard({ order, role }: OrderCardProps) {
             {isPending ? <Loader className="animate-spin" /> : 'Mark Paid'}
           </Button>
         )}
+        
+        {order.status !== 'paid' && <EditOrderSheet order={order} />}
+
         {role === 'Admin' && order.status !== 'paid' && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
