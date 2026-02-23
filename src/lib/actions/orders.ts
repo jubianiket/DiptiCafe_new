@@ -7,7 +7,6 @@ import type { OrderStatus, DailySummary, Order } from '@/lib/types';
 
 // Schema for items coming from the form
 const formItemSchema = z.object({
-  id: z.string(), // client-side UUID
   item_name: z.string().min(1, 'Item name is required'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
   price: z.coerce.number().min(0, 'Price cannot be negative'),

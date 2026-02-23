@@ -16,7 +16,6 @@ import type { Order } from '@/lib/types';
 import { Separator } from '../ui/separator';
 
 const itemSchema = z.object({
-  id: z.string(),
   item_name: z.string().min(1, 'Name is required'),
   quantity: z.coerce.number().min(1, 'Min 1'),
   price: z.coerce.number().min(0, 'Price must be a positive number'),
@@ -41,7 +40,7 @@ export function EditOrderForm({ order, onFormSubmit }: EditOrderFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      items: [{ id: crypto.randomUUID(), item_name: '', quantity: 1, price: 0 }],
+      items: [{ item_name: '', quantity: 1, price: 0 }],
     },
   });
 
@@ -135,7 +134,7 @@ export function EditOrderForm({ order, onFormSubmit }: EditOrderFormProps) {
              {form.formState.errors.items && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.items.message || form.formState.errors.items.root?.message}</p>}
           </div>
 
-          <Button type="button" variant="outline" onClick={() => append({ id: crypto.randomUUID(), item_name: '', quantity: 1, price: 0 })}>
+          <Button type="button" variant="outline" onClick={() => append({ item_name: '', quantity: 1, price: 0 })}>
             <Plus className="mr-2 h-4 w-4" /> Add New Item
           </Button>
         </div>

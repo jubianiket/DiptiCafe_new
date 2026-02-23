@@ -14,7 +14,6 @@ import { Plus, Trash2, Loader } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const itemSchema = z.object({
-  id: z.string(),
   item_name: z.string().min(1, 'Name is required'),
   quantity: z.coerce.number().min(1, 'Min 1'),
   price: z.coerce.number().min(0, 'Price must be a positive number'),
@@ -43,7 +42,7 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      items: [{ id: crypto.randomUUID(), item_name: '', quantity: 1, price: 0 }],
+      items: [{ item_name: '', quantity: 1, price: 0 }],
     },
   });
 
@@ -127,7 +126,7 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
              {form.formState.errors.items && typeof form.formState.errors.items !== 'undefined' && !form.formState.errors.items.root && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.items.message}</p>}
           </div>
 
-          <Button type="button" variant="outline" onClick={() => append({ id: crypto.randomUUID(), item_name: '', quantity: 1, price: 0 })}>
+          <Button type="button" variant="outline" onClick={() => append({ item_name: '', quantity: 1, price: 0 })}>
             <Plus className="mr-2 h-4 w-4" /> Add Item
           </Button>
         </div>
