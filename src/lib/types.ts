@@ -24,3 +24,10 @@ export interface DailySummary {
   total_orders: number;
   total_revenue: number;
 }
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  created_at: string;
+}

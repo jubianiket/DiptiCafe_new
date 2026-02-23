@@ -18,9 +18,9 @@ export default async function Home({
   const summary = await getDailySummary();
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <>
       <Header role={role} />
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
         <Dashboard
           initialOrders={orders}
           initialSummary={summary}
@@ -28,6 +28,6 @@ export default async function Home({
           statusFilter={status}
         />
       </main>
-    </div>
+    </>
   );
 }
