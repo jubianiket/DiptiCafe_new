@@ -6,6 +6,7 @@ import {
   Coffee,
   LayoutDashboard,
   Menu,
+  Gamepad2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +23,7 @@ export function MobileNav() {
     const navItems = [
         { href: '/', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/menu', label: 'Menu', icon: BookOpen },
+        { href: '/play', label: 'Play', icon: Gamepad2 },
     ];
     return (
         <Sheet>

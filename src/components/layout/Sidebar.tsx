@@ -5,6 +5,7 @@ import {
   BookOpen,
   Coffee,
   LayoutDashboard,
+  Gamepad2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +14,7 @@ export function Sidebar() {
   const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/menu', label: 'Menu', icon: BookOpen },
+    { href: '/play', label: 'Play', icon: Gamepad2 },
   ];
 
   return (

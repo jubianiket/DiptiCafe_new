@@ -31,3 +31,15 @@ export interface MenuItem {
   price: number;
   created_at: string;
 }
+
+export type TableType = 'pool' | 'snooker';
+export type PlayStatus = 'active' | 'finished';
+
+export interface PlaySession {
+  id: string;
+  table_type: TableType;
+  start_time: string;
+  end_time: string | null;
+  status: PlayStatus;
+  created_at: string;
+}
