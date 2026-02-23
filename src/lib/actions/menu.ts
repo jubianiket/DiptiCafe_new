@@ -9,7 +9,7 @@ import * as xlsx from 'xlsx';
 function getSupabaseClient() {
   const cookieStore = cookies();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (
     !supabaseUrl ||
@@ -33,7 +33,7 @@ function getSupabaseClient() {
     supabaseAnonKey === 'your-supabase-anon-public-key'
   ) {
     throw new Error(
-      "Your project's Supabase publishable key is missing! Please update the NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY in your .env.local file. Check your Supabase project's API settings to find this value: https://supabase.com/dashboard/project/_/settings/api"
+      "Your project's Supabase anon key is missing! Please update the NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env.local file. Check your Supabase project's API settings to find this value: https://supabase.com/dashboard/project/_/settings/api"
     );
   }
 

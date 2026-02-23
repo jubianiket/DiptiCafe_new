@@ -71,17 +71,13 @@ export function OrderCard({ order, role }: OrderCardProps) {
   const router = useRouter();
   const { toast } = useToast();
   const CurrentStatusIcon = statusInfo[order.status].icon;
-  const [timeAgo, setTimeAgo] = useState(() => {
-    if (typeof window === 'undefined') {
-        return '';
-    }
-    const date = new Date(order.created_at);
-    return isNaN(date.getTime()) ? '' : formatDistanceToNow(date, { addSuffix: true });
-  });
+  const [timeAgo, setTimeAgo] = useState('');
 
   useEffect(() => {
     const date = new Date(order.created_at);
     if (isNaN(date.getTime())) return;
+
+    setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));
 
     const interval = setInterval(() => {
         setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));

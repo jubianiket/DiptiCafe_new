@@ -48,8 +48,52 @@ npm install
 
 1.  **Create a new project** on [Supabase](https://app.supabase.com).
 2.  Navigate to the **SQL Editor** in your Supabase project dashboard.
-3.  Copy the entire content of the `sql/schema.sql` file from this repository.
-4.  Paste the SQL into the editor and click **Run** to create the necessary tables (`orders`).
+3.  Run the following SQL queries to create the necessary tables (`orders`, `order_items`, `menu_items`, `play_sessions`).
+
+    ```sql
+    -- Table to store orders
+    CREATE TABLE orders (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        table_no TEXT,
+        customer_name TEXT,
+        total_amount REAL NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'delivered', 'paid')),
+        created_by UUID
+    );
+
+    -- Table to store items within an order
+    CREATE TABLE order_items (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        item_name TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        price REAL NOT NULL
+    );
+
+    -- Table to store menu items
+    CREATE TABLE menu_items (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        price REAL NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    
+    -- Table to store gaming sessions
+    CREATE TABLE play_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        table_type TEXT NOT NULL CHECK (table_type IN ('pool', 'snooker')),
+        start_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        end_time TIMESTAMPTZ,
+        status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'finished')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- Indexes for faster queries
+    CREATE INDEX idx_orders_status ON orders(status);
+    CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+    CREATE INDEX idx_play_sessions_status ON play_sessions(status);
+    ```
 
 ### 5. Configure Environment Variables
 
@@ -63,7 +107,7 @@ npm install
     NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-public-key
     ```
 
-    **Note**: The app uses Row Level Security (RLS) policies defined in `sql/schema.sql` for data access. For simplicity, we use the `anon` key, which is safe for public exposure.
+    **Note**: The app uses Row Level Security (RLS). For simplicity in this setup, we use the `anon` key, which is safe for public exposure as long as RLS is enabled on your tables.
 
 ### 6. Run the Development Server
 

@@ -11,6 +11,8 @@ export function DurationClock({ startTime }: { startTime: string }) {
 
   useEffect(() => {
     const start = new Date(startTime).getTime();
+    if (isNaN(start)) return;
+
     const intervalId = setInterval(() => {
       const now = Date.now();
       const diff = now - start;

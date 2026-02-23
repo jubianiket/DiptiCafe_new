@@ -53,7 +53,9 @@ export function PlayClientPage({ initialActiveSessions: sessions }: PlayClientPa
         const startTime = new Date(endedSession.start_time);
         const endTime = new Date(endedSession.end_time!);
         const durationMs = endTime.getTime() - startTime.getTime();
-        const durationStr = formatDistance(endTime, startTime);
+        
+        // Use formatDistance for a user-friendly duration string
+        const durationStr = formatDistance(endTime, startTime, { includeSeconds: true });
         
         const rate = TABLE_CONFIG[endedSession.table_type].rate;
         const cost = (durationMs / (1000 * 60 * 60)) * rate;
