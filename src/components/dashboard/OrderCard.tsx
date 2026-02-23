@@ -44,19 +44,19 @@ const statusInfo: Record<
   OrderStatus,
   { label: string; icon: React.ElementType; color: string; badgeVariant: 'default' | 'secondary' | 'outline' }
 > = {
-  Pending: {
+  pending: {
     label: 'Pending',
     icon: Hourglass,
     color: 'text-amber-600',
     badgeVariant: 'outline',
   },
-  Delivered: {
+  delivered: {
     label: 'Delivered',
     icon: CheckCircle,
     color: 'text-blue-600',
     badgeVariant: 'secondary',
   },
-  Paid: {
+  paid: {
     label: 'Paid',
     icon: CircleDollarSign,
     color: 'text-green-600',
@@ -96,14 +96,14 @@ export function OrderCard({ order, role }: OrderCardProps) {
       <CardHeader>
         <div className="flex justify-between items-start">
             <div>
-                <CardTitle>{order.customer_name || `Table ${order.table_number}`}</CardTitle>
+                <CardTitle>{order.customer_name || `Table ${order.table_no}`}</CardTitle>
                 <CardDescription>
                 {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
                 </CardDescription>
             </div>
             <Badge variant={statusInfo[order.status].badgeVariant}>
                 <CurrentStatusIcon className={`mr-2 h-4 w-4 ${statusInfo[order.status].color}`} />
-                {order.status}
+                {statusInfo[order.status].label}
             </Badge>
         </div>
       </CardHeader>
@@ -113,7 +113,7 @@ export function OrderCard({ order, role }: OrderCardProps) {
           {order.items.map((item) => (
             <li key={item.id} className="flex justify-between">
               <span>
-                {item.quantity}x {item.name}
+                {item.quantity}x {item.item_name}
               </span>
               <span>${(item.price * item.quantity).toFixed(2)}</span>
             </li>
@@ -126,17 +126,17 @@ export function OrderCard({ order, role }: OrderCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row gap-2 pt-4">
-        {order.status === 'Pending' && (
-          <Button onClick={() => handleUpdateStatus('Delivered')} disabled={isPending} className="w-full" variant="secondary">
+        {order.status === 'pending' && (
+          <Button onClick={() => handleUpdateStatus('delivered')} disabled={isPending} className="w-full" variant="secondary">
             {isPending ? <Loader className="animate-spin" /> : 'Mark Delivered'}
           </Button>
         )}
-        {order.status === 'Delivered' && (
-          <Button onClick={() => handleUpdateStatus('Paid')} disabled={isPending} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+        {order.status === 'delivered' && (
+          <Button onClick={() => handleUpdateStatus('paid')} disabled={isPending} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
             {isPending ? <Loader className="animate-spin" /> : 'Mark Paid'}
           </Button>
         )}
-        {role === 'Admin' && order.status !== 'Paid' && (
+        {role === 'Admin' && order.status !== 'paid' && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="icon" className="w-full sm:w-auto" disabled={isPending}>

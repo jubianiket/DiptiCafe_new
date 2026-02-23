@@ -8,9 +8,9 @@ interface OrderFiltersProps {
 
 const filters: { label: string; value?: OrderStatus }[] = [
   { label: 'All', value: undefined },
-  { label: 'Pending', value: 'Pending' },
-  { label: 'Delivered', value: 'Delivered' },
-  { label: 'Paid', value: 'Paid' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Delivered', value: 'delivered' },
+  { label: 'Paid', value: 'paid' },
 ];
 
 export function OrderFilters({ currentFilter }: OrderFiltersProps) {

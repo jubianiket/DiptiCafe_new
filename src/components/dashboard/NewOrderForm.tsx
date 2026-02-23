@@ -14,16 +14,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const itemSchema = z.object({
   id: z.string(),
-  name: z.string().min(1, 'Name is required'),
+  item_name: z.string().min(1, 'Name is required'),
   quantity: z.coerce.number().min(1, 'Min 1'),
   price: z.coerce.number().min(0, 'Price must be a positive number'),
 });
 
 const formSchema = z.object({
-  table_number: z.string().optional(),
+  table_no: z.string().optional(),
   customer_name: z.string().optional(),
   items: z.array(itemSchema).min(1, 'Order must have at least one item.'),
-}).refine(data => data.table_number || data.customer_name, {
+}).refine(data => data.table_no || data.customer_name, {
   message: "Either Table Number or Customer Name is required.",
   path: ["customer_name"],
 });
@@ -41,7 +41,7 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      items: [{ id: crypto.randomUUID(), name: '', quantity: 1, price: 0 }],
+      items: [{ id: crypto.randomUUID(), item_name: '', quantity: 1, price: 0 }],
     },
   });
 
@@ -56,14 +56,13 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
       const formData = new FormData();
-      if (data.table_number) formData.append('table_number', data.table_number);
+      if (data.table_no) formData.append('table_no', data.table_no);
       if (data.customer_name) formData.append('customer_name', data.customer_name);
       formData.append('items', JSON.stringify(data.items));
 
       const result = await createOrder(formData);
 
       if (result?.error) {
-        // Handle field-specific errors
         if(typeof result.error !== 'string') {
           for (const [field, messages] of Object.entries(result.error)) {
             if (field === 'form' && messages) {
@@ -72,6 +71,8 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
               form.setError(field as keyof FormValues, { type: 'manual', message: messages?.join(', ') });
             }
           }
+        } else {
+           toast({ title: 'Error', description: result.error, variant: 'destructive' });
         }
       } else {
         toast({ title: 'Success', description: 'New order created.' });
@@ -92,8 +93,8 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="table_number">Table Number</Label>
-            <Input id="table_number" type="number" {...form.register('table_number')} />
+            <Label htmlFor="table_no">Table Number</Label>
+            <Input id="table_no" {...form.register('table_no')} />
           </div>
 
           <div className="space-y-2">
@@ -102,8 +103,8 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
               <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md bg-muted/50">
                 <div className="grid grid-cols-3 gap-2 flex-1">
                   <div className="col-span-3">
-                    <Label htmlFor={`items.${index}.name`} className="text-xs">Name</Label>
-                    <Input {...form.register(`items.${index}.name`)} id={`items.${index}.name`} placeholder="e.g., Cappuccino"/>
+                    <Label htmlFor={`items.${index}.item_name`} className="text-xs">Name</Label>
+                    <Input {...form.register(`items.${index}.item_name`)} id={`items.${index}.item_name`} placeholder="e.g., Cappuccino"/>
                   </div>
                   <div>
                     <Label htmlFor={`items.${index}.quantity`} className="text-xs">Qty</Label>
@@ -123,7 +124,7 @@ export function NewOrderForm({ onFormSubmit }: NewOrderFormProps) {
              {form.formState.errors.items && typeof form.formState.errors.items !== 'undefined' && !form.formState.errors.items.root && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.items.message}</p>}
           </div>
 
-          <Button type="button" variant="outline" onClick={() => append({ id: crypto.randomUUID(), name: '', quantity: 1, price: 0 })}>
+          <Button type="button" variant="outline" onClick={() => append({ id: crypto.randomUUID(), item_name: '', quantity: 1, price: 0 })}>
             <Plus className="mr-2 h-4 w-4" /> Add Item
           </Button>
         </div>

@@ -6,66 +6,116 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { OrderStatus, DailySummary, Order, OrderItem } from '@/lib/types';
 
-const itemSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1, 'Item name is required'),
-  quantity: z.number().min(1, 'Quantity must be at least 1'),
-  price: z.number().min(0, 'Price cannot be negative'),
+// Schema for items coming from the form
+const formItemSchema = z.object({
+  id: z.string(), // client-side UUID
+  item_name: z.string().min(1, 'Item name is required'),
+  quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
+  price: z.coerce.number().min(0, 'Price cannot be negative'),
 });
 
-const orderSchema = z.object({
-  table_number: z.coerce.number().optional(),
+// Schema for the order coming from the form
+const formOrderSchema = z.object({
+  table_no: z.string().optional(),
   customer_name: z.string().optional(),
-  items: z.array(itemSchema).min(1, 'At least one item is required'),
+  items: z.array(formItemSchema).min(1, 'At least one item is required'),
 });
 
 function getSupabaseClient() {
   const cookieStore = cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (
+    !supabaseUrl ||
+    supabaseUrl.trim() === '' ||
+    supabaseUrl === 'your-supabase-project-url'
+  ) {
+    throw new Error(
+      "Your project's Supabase URL is missing! Please update the NEXT_PUBLIC_SUPABASE_URL in your .env.local file. Check your Supabase project's API settings to find this value: https://supabase.com/dashboard/project/_/settings/api"
+    );
+  }
+  
+  if (!supabaseUrl.startsWith('http')) {
+      throw new Error(
+      `Your Supabase URL looks invalid. It must be a valid HTTP or HTTPS URL. You provided: '${supabaseUrl}'. Please correct it in your .env.local file.`
+    );
+  }
+
+  if (
+    !supabaseAnonKey ||
+    supabaseAnonKey.trim() === '' ||
+    supabaseAnonKey === 'your-supabase-anon-public-key'
+  ) {
+    throw new Error(
+      "Your project's Supabase anon key is missing! Please update the NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env.local file. Check your Supabase project's API settings to find this value: https://supabase.com/dashboard/project/_/settings/api"
+    );
+  }
+
+
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value;
       },
-    }
-  );
+    },
+  });
 }
 
 export async function createOrder(formData: FormData) {
   const rawData = {
-    table_number: formData.get('table_number'),
-    customer_name: formData.get('customer_name'),
+    table_no: (formData.get('table_no') as string) || undefined,
+    customer_name: (formData.get('customer_name') as string) || undefined,
     items: JSON.parse(formData.get('items') as string),
   };
-
-  const validation = orderSchema.safeParse(rawData);
+  
+  const validation = formOrderSchema.safeParse(rawData);
 
   if (!validation.success) {
     return { error: validation.error.flatten().fieldErrors };
   }
-
-  const { items, ...rest } = validation.data;
   
-  const total_amount = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
-  if (!rest.table_number && !rest.customer_name) {
+  if (!validation.data.table_no && !validation.data.customer_name) {
       return { error: { form: 'Either Table Number or Customer Name must be provided.' } };
   }
 
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from('orders').insert({
-    ...rest,
-    items,
-    total_amount,
-    status: 'Pending',
-  });
+  const { items, ...orderData } = validation.data;
+  
+  const total_amount = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
-  if (error) {
-    console.error('Supabase error:', error.message);
+  const supabase = getSupabaseClient();
+  
+  // 1. Insert the order
+  const { data: newOrder, error: orderError } = await supabase
+    .from('orders')
+    .insert({
+      ...orderData,
+      total_amount,
+      status: 'pending',
+    })
+    .select()
+    .single();
+
+  if (orderError) {
+    console.error('Supabase order insert error:', orderError.message);
     return { error: { form: 'Failed to create order. Please try again.' } };
+  }
+
+  // 2. Prepare and insert order items
+  const orderItemsData = items.map(item => ({
+    order_id: newOrder.id,
+    item_name: item.item_name,
+    quantity: item.quantity,
+    price: item.price,
+  }));
+
+  const { error: itemsError } = await supabase.from('order_items').insert(orderItemsData);
+
+  if (itemsError) {
+    console.error('Supabase items insert error:', itemsError.message);
+    // Attempt to roll back by deleting the order
+    await supabase.from('orders').delete().eq('id', newOrder.id);
+    return { error: { form: 'Failed to save order items. Order creation was rolled back.' } };
   }
 
   revalidatePath('/');
@@ -74,20 +124,24 @@ export async function createOrder(formData: FormData) {
 
 export async function getOrders({ status }: { status?: OrderStatus }): Promise<Order[]> {
   const supabase = getSupabaseClient();
-  let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+  let query = supabase.from('orders').select('*, items:order_items(*)').order('created_at', { ascending: false });
 
   if (status) {
     query = query.eq('status', status);
   }
 
-  const { data, error } = await query;
+  const { data: ordersData, error: ordersError } = await query;
 
-  if (error) {
-    console.error('Failed to fetch orders:', error);
+  if (ordersError) {
+    console.error('Failed to fetch orders:', ordersError.message);
     return [];
   }
+  if (!ordersData) {
+      return [];
+  }
 
-  return data as Order[];
+  // The 'items' alias from the query automatically maps order_items to the items property
+  return ordersData as Order[];
 }
 
 export async function getDailySummary(): Promise<DailySummary> {
@@ -100,7 +154,7 @@ export async function getDailySummary(): Promise<DailySummary> {
   const { data, error, count } = await supabase
     .from('orders')
     .select('total_amount', { count: 'exact' })
-    .eq('status', 'Paid')
+    .eq('status', 'paid')
     .gte('created_at', today.toISOString())
     .lt('created_at', tomorrow.toISOString());
 
@@ -108,13 +162,13 @@ export async function getDailySummary(): Promise<DailySummary> {
     console.error('Failed to fetch daily summary:', error);
     return { total_orders: 0, total_revenue: 0 };
   }
-
-  const total_revenue = data.reduce((acc, order) => acc + order.total_amount, 0);
+  
+  const total_revenue = data ? data.reduce((acc, order) => acc + order.total_amount, 0) : 0;
   
   return { total_orders: count ?? 0, total_revenue };
 }
 
-export async function updateOrderStatus(id: number, status: OrderStatus) {
+export async function updateOrderStatus(id: string, status: OrderStatus) {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from('orders').update({ status }).eq('id', id);
 
@@ -126,7 +180,7 @@ export async function updateOrderStatus(id: number, status: OrderStatus) {
   return { success: true };
 }
 
-export async function deleteOrder(id: number) {
+export async function deleteOrder(id: string) {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from('orders').delete().eq('id', id);
 
