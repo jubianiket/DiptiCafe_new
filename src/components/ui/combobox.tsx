@@ -48,7 +48,7 @@ export function Combobox({ options, value, onChange, placeholder, searchPlacehol
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command>
+        <Command onKeyDown={(e) => e.stopPropagation()}>
           <CommandInput placeholder={searchPlaceholder || "Search..."} />
           <CommandList>
             <CommandEmpty>{emptyPlaceholder || "No results found."}</CommandEmpty>
