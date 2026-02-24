@@ -33,7 +33,7 @@ export function Combobox({ options, value, onChange, placeholder, searchPlacehol
   const [open, setOpen] = React.useState(false)
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -47,7 +47,10 @@ export function Combobox({ options, value, onChange, placeholder, searchPlacehol
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <Command onKeyDown={(e) => e.stopPropagation()}>
           <CommandInput placeholder={searchPlaceholder || "Search..."} />
           <CommandList>
