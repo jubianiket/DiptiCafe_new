@@ -12,8 +12,8 @@ import { DurationClock } from './DurationClock';
 import { formatDistance } from 'date-fns';
 
 const TABLE_CONFIG = {
-  pool: { name: 'Pool Table', rate: 150 }, // Rate per hour
-  snooker: { name: 'Snooker Table', rate: 250 }, // Rate per hour
+  pool: { name: 'Pool Table', rate: 120 }, // Rate per hour
+  snooker: { name: 'Snooker Table', rate: 150 }, // Rate per hour
 };
 
 interface PlayClientPageProps {
