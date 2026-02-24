@@ -8,6 +8,7 @@ import {
   Menu,
   Gamepad2,
   Warehouse,
+  History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +27,7 @@ export function MobileNav() {
         { href: '/menu', label: 'Menu', icon: BookOpen },
         { href: '/play', label: 'Play', icon: Gamepad2 },
         { href: '/inventory', label: 'Inventory', icon: Warehouse },
+        { href: '/history', label: 'History', icon: History },
     ];
     return (
         <Sheet>

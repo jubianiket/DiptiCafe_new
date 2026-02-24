@@ -13,7 +13,6 @@ const filters: { label: string; value: OrderStatus | 'All' }[] = [
   { label: 'All', value: 'All' },
   { label: 'Pending', value: 'pending' },
   { label: 'Delivered', value: 'delivered' },
-  { label: 'Paid', value: 'paid' },
 ];
 
 export function OrderFilters({ currentFilter }: OrderFiltersProps) {

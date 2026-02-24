@@ -129,6 +129,9 @@ export async function getOrders({ status }: { status?: OrderStatus }): Promise<O
   
     if (status) {
       query = query.eq('status', status);
+    } else {
+      // If no status filter is applied, show only pending and delivered orders on the main dashboard
+      query = query.in('status', ['pending', 'delivered']);
     }
   
     const { data: ordersData, error: ordersError } = await query;
