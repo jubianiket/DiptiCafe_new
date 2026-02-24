@@ -85,7 +85,7 @@ export async function addInventoryItem(formData: FormData) {
     if (error.code === '23505') { // unique constraint violation
         return { error: { name: ['An item with this name already exists.'] } };
     }
-    return { error: { form: 'Failed to create inventory item.' } };
+    return { error: { form: ['Failed to create inventory item.'] } };
   }
 
   return { success: true };
@@ -113,7 +113,7 @@ export async function updateInventoryItem(id: string, formData: FormData) {
         if (error.code === '23505') {
             return { error: { name: ['An item with this name already exists.'] } };
         }
-        return { error: { form: 'Failed to update inventory item.' } };
+        return { error: { form: ['Failed to update inventory item.'] } };
     }
 
     return { success: true };

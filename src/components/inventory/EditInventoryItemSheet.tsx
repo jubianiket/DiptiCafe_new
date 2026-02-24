@@ -65,9 +65,15 @@ export function EditInventoryItemSheet({ item }: EditInventoryItemSheetProps) {
         if(typeof result.error !== 'string') {
           for (const [field, messages] of Object.entries(result.error)) {
              if (messages) {
-               form.setError(field as keyof FormValues, { type: 'manual', message: messages.join(', ') });
+               if (field === 'form') {
+                    toast({ title: 'Error', description: (messages as string[]).join(', '), variant: 'destructive' });
+               } else {
+                    form.setError(field as keyof FormValues, { type: 'manual', message: (messages as string[]).join(', ') });
+               }
             }
           }
+        } else {
+            toast({ title: 'Error', description: result.error, variant: 'destructive' });
         }
       } else {
         toast({ title: 'Success', description: 'Inventory item updated.' });
