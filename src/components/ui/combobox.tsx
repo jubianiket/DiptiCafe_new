@@ -50,6 +50,7 @@ export function Combobox({ options, value, onChange, placeholder, searchPlacehol
       <PopoverContent
         className="w-[--radix-popover-trigger-width] p-0"
         onPointerDownOutside={(e) => e.preventDefault()}
+        style={{ zIndex: 999 }}
       >
         <Command onKeyDown={(e) => e.stopPropagation()}>
           <CommandInput placeholder={searchPlaceholder || "Search..."} />
