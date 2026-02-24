@@ -6,6 +6,7 @@ import {
   Coffee,
   LayoutDashboard,
   Gamepad2,
+  Warehouse,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +16,7 @@ export function Sidebar() {
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/menu', label: 'Menu', icon: BookOpen },
     { href: '/play', label: 'Play', icon: Gamepad2 },
+    { href: '/inventory', label: 'Inventory', icon: Warehouse },
   ];
 
   return (

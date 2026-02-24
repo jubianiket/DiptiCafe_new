@@ -44,3 +44,12 @@ export interface PlaySession {
   status: PlayStatus;
   created_at: string;
 }
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string | null;
+  updated_at: string;
+  low_stock_threshold: number | null;
+}

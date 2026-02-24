@@ -48,7 +48,7 @@ npm install
 
 1.  **Create a new project** on [Supabase](https://app.supabase.com).
 2.  Navigate to the **SQL Editor** in your Supabase project dashboard.
-3.  Run the following SQL queries to create the necessary tables (`orders`, `order_items`, `menu_items`, `play_sessions`).
+3.  Run the following SQL queries to create the necessary tables (`orders`, `order_items`, `menu_items`, `play_sessions`, `inventory`).
 
     ```sql
     -- Table to store orders
@@ -89,6 +89,32 @@ npm install
         status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'finished')),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    
+    -- Table to store inventory items
+    CREATE TABLE inventory (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL UNIQUE,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        unit TEXT,
+        low_stock_threshold INTEGER,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- Function to update updated_at timestamp on inventory table
+    CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    -- Trigger to automatically update updated_at on inventory row update
+    CREATE TRIGGER set_timestamp
+    BEFORE UPDATE ON inventory
+    FOR EACH ROW
+    EXECUTE PROCEDURE trigger_set_timestamp();
 
     -- Indexes for faster queries
     CREATE INDEX idx_orders_status ON orders(status);
@@ -119,3 +145,4 @@ npm run dev
 Open [http://localhost:9002](http://localhost:9002) (or the specified port) in your browser to see the application.
 
 You can use the Role Switcher in the header to toggle between "Staff" and "Admin" views to see the different UI and permissions.
+```
