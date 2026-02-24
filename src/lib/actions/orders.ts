@@ -7,12 +7,13 @@ import type { OrderStatus, DailySummary, Order } from '@/lib/types';
 
 // Schema for items coming from the form
 const formItemSchema = z.object({
+  id: z.string().optional(),
   item_name: z.string().min(1, 'Item name is required'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
   price: z.coerce.number().min(0, 'Price cannot be negative'),
 });
 
-// Schema for the order coming from the form
+// Schema for a new order coming from the form
 const formOrderSchema = z.object({
   table_no: z.string().optional(),
   customer_name: z.string().optional(),
@@ -197,18 +198,19 @@ const updateOrderSchema = z.object({
   table_no: z.string().optional(),
   customer_name: z.string().optional(),
   phone_number: z.string().optional(),
-  items: z.array(formItemSchema).optional(), // items are optional
+  items: z.array(formItemSchema).min(1, 'Order must have at least one item.'),
 }).refine(data => data.table_no || data.customer_name, {
   message: "Either Table Number or Customer Name is required.",
   path: ["customer_name"],
 });
+
 
 export async function updateOrder(orderId: string, formData: FormData) {
   const rawData = {
     table_no: (formData.get('table_no') as string) || undefined,
     customer_name: (formData.get('customer_name') as string) || undefined,
     phone_number: (formData.get('phone_number') as string) || undefined,
-    items: formData.has('items') ? JSON.parse(formData.get('items') as string) : undefined,
+    items: formData.has('items') ? JSON.parse(formData.get('items') as string) : [],
   };
 
   const validation = updateOrderSchema.safeParse(rawData);
@@ -217,56 +219,53 @@ export async function updateOrder(orderId: string, formData: FormData) {
     return { error: validation.error.flatten().fieldErrors };
   }
 
-  const { items: newItems, ...detailsToUpdate } = validation.data;
+  const { items, ...detailsToUpdate } = validation.data;
   const supabase = getSupabaseClient();
-  
-  let newItemsTotal = 0;
-  if (newItems && newItems.length > 0) {
-      const newOrderItemsData = newItems.map(item => ({
-        order_id: orderId,
-        item_name: item.item_name,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-    
-      const { error: itemsError } = await supabase.from('order_items').insert(newOrderItemsData);
-    
-      if (itemsError) {
-        console.error('Supabase add items error:', itemsError.message);
-        return { error: { form: ['Failed to add new items to the order.'] } };
-      }
-      newItemsTotal = newItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  // 1. Delete all existing items for the order
+  const { error: deleteError } = await supabase
+    .from('order_items')
+    .delete()
+    .eq('order_id', orderId);
+
+  if (deleteError) {
+    console.error('Supabase delete items error:', deleteError.message);
+    return { error: { form: ['Failed to update items. Could not clear old items.'] } };
   }
 
-  const orderUpdatePayload: { [key: string]: any } = { ...detailsToUpdate };
+  // 2. Prepare and insert the new set of items
+  const newTotalAmount = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const newOrderItemsData = items.map(item => ({
+    order_id: orderId,
+    item_name: item.item_name,
+    quantity: item.quantity,
+    price: item.price,
+  }));
 
-  if (newItemsTotal > 0) {
-      const { data: existingOrder, error: fetchError } = await supabase
-        .from('orders')
-        .select('total_amount')
-        .eq('id', orderId)
-        .single();
-  
-      if (fetchError || !existingOrder) {
-        console.error('Failed to fetch existing order:', fetchError?.message);
-        return { error: { form: ['Could not find the order to update.'] } };
-      }
-      
-      orderUpdatePayload.total_amount = existingOrder.total_amount + newItemsTotal;
+  const { error: insertError } = await supabase.from('order_items').insert(newOrderItemsData);
+
+  if (insertError) {
+    console.error('Supabase insert new items error:', insertError.message);
+    // In a real production app, you'd want to wrap this in a transaction or at least
+    // attempt to restore the previously deleted items.
+    return { error: { form: ['Failed to save new item list after clearing the old one. Order may be in an inconsistent state.'] } };
   }
   
-  // only update if there's something to update
-  if (Object.keys(orderUpdatePayload).length > 0) {
-      // Supabase client ignores undefined keys, so this is safe.
-      const { error: updateError } = await supabase
-          .from('orders')
-          .update(orderUpdatePayload)
-          .eq('id', orderId);
-      
-      if (updateError) {
-          console.error('Supabase update order error:', updateError.message);
-          return { error: { form: ['Failed to update order details.'] } };
-      }
+  // 3. Update the order itself with new total and details
+  const orderUpdatePayload = {
+    ...detailsToUpdate,
+    total_amount: newTotalAmount,
+  };
+  
+  // Supabase client ignores undefined keys, so this is safe.
+  const { error: updateError } = await supabase
+      .from('orders')
+      .update(orderUpdatePayload)
+      .eq('id', orderId);
+  
+  if (updateError) {
+      console.error('Supabase update order error:', updateError.message);
+      return { error: { form: ['Failed to update order details and total.'] } };
   }
 
   return { success: true };

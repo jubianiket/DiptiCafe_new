@@ -13,10 +13,10 @@ import { updateOrder } from '@/lib/actions/orders';
 import { Plus, Trash2, Loader } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Order, MenuItem } from '@/lib/types';
-import { Separator } from '../ui/separator';
 import { Combobox } from '@/components/ui/combobox';
 
 const itemSchema = z.object({
+  id: z.string().optional(), // The order_item UUID from the DB
   item_name: z.string().min(1, 'Name is required'),
   quantity: z.coerce.number().min(1, 'Min 1'),
   price: z.coerce.number().min(0, 'Price must be a positive number'),
@@ -26,7 +26,7 @@ const formSchema = z.object({
   table_no: z.string().optional(),
   customer_name: z.string().optional(),
   phone_number: z.string().optional(),
-  items: z.array(itemSchema),
+  items: z.array(itemSchema).min(1, 'Order must have at least one item.'),
 }).refine(data => data.table_no || data.customer_name, {
   message: "Either Table Number or Customer Name is required.",
   path: ["customer_name"],
@@ -51,7 +51,7 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
       customer_name: order.customer_name ?? '',
       table_no: order.table_no ?? '',
       phone_number: order.phone_number ?? '',
-      items: [],
+      items: order.items,
     },
   });
 
@@ -61,8 +61,7 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
   });
 
   const watchedItems = form.watch('items');
-  const newItemsTotal = watchedItems.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 0), 0);
-  const newGrandTotal = order.total_amount + newItemsTotal;
+  const grandTotal = watchedItems.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 0), 0);
 
   const menuOptions = useMemo(() => menuItems.map(item => ({ label: item.name, value: item.name })), [menuItems]);
 
@@ -72,10 +71,7 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
       if (data.table_no) formData.append('table_no', data.table_no);
       if (data.customer_name) formData.append('customer_name', data.customer_name);
       if (data.phone_number) formData.append('phone_number', data.phone_number);
-      
-      if (data.items.length > 0) {
-        formData.append('items', JSON.stringify(data.items));
-      }
+      formData.append('items', JSON.stringify(data.items));
 
       const result = await updateOrder(order.id, formData);
 
@@ -110,7 +106,7 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
              {form.formState.errors.customer_name && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.customer_name.message}</p>}
           </div>
 
-          <div>
+           <div>
             <Label htmlFor="phone_number">Phone Number</Label>
             <Input id="phone_number" {...form.register('phone_number')} />
             {form.formState.errors.phone_number && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.phone_number.message}</p>}
@@ -122,31 +118,8 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
              {form.formState.errors.table_no && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.table_no.message}</p>}
           </div>
           
-          <Separator />
-
           <div className="space-y-2">
-            <Label>Existing Items</Label>
-            <div className='p-4 border rounded-lg bg-muted/50 text-sm'>
-              <ul className="text-muted-foreground space-y-1">
-                {order.items.map((item) => (
-                  <li key={item.id} className="flex justify-between">
-                    <span>
-                      {item.quantity}x {item.item_name}
-                    </span>
-                    <span>Rs. {(item.price * item.quantity).toFixed(2)}</span>
-                  </li>
-                ))}
-              </ul>
-              <Separator className="my-2" />
-              <div className="flex justify-between font-bold text-foreground">
-                  <span>Current Total</span>
-                  <span>Rs. {order.total_amount.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label>New Items</Label>
+            <Label>Items</Label>
             {fields.map((field, index) => (
               <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
                 <div className="grid grid-cols-3 gap-2 flex-1">
@@ -200,8 +173,8 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
       </ScrollArea>
       <div className="mt-auto pt-6 border-t space-y-4">
         <div className="flex justify-between items-center text-lg font-bold">
-            <span>New Total:</span>
-            <span>Rs. {newGrandTotal.toFixed(2)}</span>
+            <span>Total:</span>
+            <span>Rs. {grandTotal.toFixed(2)}</span>
         </div>
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? <Loader className="animate-spin" /> : 'Update Order'}
