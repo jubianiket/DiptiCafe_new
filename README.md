@@ -57,6 +57,7 @@ npm install
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         table_no TEXT,
         customer_name TEXT,
+        phone_number TEXT,
         total_amount REAL NOT NULL,
         status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'delivered', 'paid')),
         created_by UUID

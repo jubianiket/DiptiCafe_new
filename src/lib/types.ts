@@ -14,6 +14,7 @@ export interface Order {
   created_at: string;
   table_no: string | null;
   customer_name: string | null;
+  phone_number: string | null;
   items: OrderItem[];
   total_amount: number;
   status: OrderStatus;

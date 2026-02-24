@@ -24,6 +24,7 @@ const itemSchema = z.object({
 const formSchema = z.object({
   table_no: z.string().optional(),
   customer_name: z.string().optional(),
+  phone_number: z.string().optional(),
   items: z.array(itemSchema).min(1, 'Order must have at least one item.'),
 }).refine(data => data.table_no || data.customer_name, {
   message: "Either Table Number or Customer Name is required.",
@@ -46,6 +47,9 @@ export function NewOrderForm({ onFormSubmit, menuItems }: NewOrderFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       items: [{ item_name: '', quantity: 1, price: 0 }],
+      customer_name: '',
+      table_no: '',
+      phone_number: '',
     },
   });
 
@@ -64,6 +68,7 @@ export function NewOrderForm({ onFormSubmit, menuItems }: NewOrderFormProps) {
       const formData = new FormData();
       if (data.table_no) formData.append('table_no', data.table_no);
       if (data.customer_name) formData.append('customer_name', data.customer_name);
+      if (data.phone_number) formData.append('phone_number', data.phone_number);
       formData.append('items', JSON.stringify(data.items));
 
       const result = await createOrder(formData);
@@ -97,6 +102,12 @@ export function NewOrderForm({ onFormSubmit, menuItems }: NewOrderFormProps) {
             <Label htmlFor="customer_name">Customer Name</Label>
             <Input id="customer_name" {...form.register('customer_name')} />
              {form.formState.errors.customer_name && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.customer_name.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="phone_number">Phone Number</Label>
+            <Input id="phone_number" {...form.register('phone_number')} />
+            {form.formState.errors.phone_number && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.phone_number.message}</p>}
           </div>
 
           <div>

@@ -118,7 +118,8 @@ export function OrderCard({ order, role, menuItems }: OrderCardProps) {
             <div>
                 <CardTitle>{order.customer_name || `Table ${order.table_no}`}</CardTitle>
                 <CardDescription>
-                {timeAgo}
+                  {order.phone_number && <span className="font-medium">{order.phone_number} &middot; </span>}
+                  {timeAgo}
                 </CardDescription>
             </div>
             <Badge variant={statusInfo[order.status].badgeVariant}>

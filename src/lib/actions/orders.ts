@@ -16,6 +16,7 @@ const formItemSchema = z.object({
 const formOrderSchema = z.object({
   table_no: z.string().optional(),
   customer_name: z.string().optional(),
+  phone_number: z.string().optional(),
   items: z.array(formItemSchema).min(1, 'At least one item is required'),
 });
 
@@ -64,6 +65,7 @@ export async function createOrder(formData: FormData) {
   const rawData = {
     table_no: (formData.get('table_no') as string) || undefined,
     customer_name: (formData.get('customer_name') as string) || undefined,
+    phone_number: (formData.get('phone_number') as string) || undefined,
     items: JSON.parse(formData.get('items') as string),
   };
   
@@ -191,6 +193,7 @@ export async function deleteOrder(id: string) {
 const updateOrderSchema = z.object({
   table_no: z.string().optional(),
   customer_name: z.string().optional(),
+  phone_number: z.string().optional(),
   items: z.array(formItemSchema).optional(), // items are optional
 }).refine(data => data.table_no || data.customer_name, {
   message: "Either Table Number or Customer Name is required.",
@@ -201,6 +204,7 @@ export async function updateOrder(orderId: string, formData: FormData) {
   const rawData = {
     table_no: (formData.get('table_no') as string) || undefined,
     customer_name: (formData.get('customer_name') as string) || undefined,
+    phone_number: (formData.get('phone_number') as string) || undefined,
     items: formData.has('items') ? JSON.parse(formData.get('items') as string) : undefined,
   };
 
