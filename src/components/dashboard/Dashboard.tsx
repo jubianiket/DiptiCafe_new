@@ -23,7 +23,7 @@ export function Dashboard({
 
   return (
     <div className="space-y-6">
-      <SalesSummary summary={summary} />
+      <SalesSummary summary={summary} role={role} />
       <div>
         <h2 className="text-2xl font-bold tracking-tight mb-4 font-headline">Active Orders</h2>
         <OrderFilters currentFilter={statusFilter} />
