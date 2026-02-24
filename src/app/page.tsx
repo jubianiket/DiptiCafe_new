@@ -21,8 +21,9 @@ export default async function Home({
       <Header role={role} />
       <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
         <Dashboard
-          initialOrders={orders}
-          initialSummary={summary}
+          key={status || 'all'}
+          orders={orders}
+          summary={summary}
           role={role}
           statusFilter={status}
         />
