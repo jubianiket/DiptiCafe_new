@@ -1,12 +1,13 @@
-import type { Order, UserRole } from '@/lib/types';
+import type { Order, UserRole, MenuItem } from '@/lib/types';
 import { OrderCard } from './OrderCard';
 
 interface OrderListProps {
   orders: Order[];
   role: UserRole;
+  menuItems: MenuItem[];
 }
 
-export function OrderList({ orders, role }: OrderListProps) {
+export function OrderList({ orders, role, menuItems }: OrderListProps) {
   if (orders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-20 text-center">
@@ -19,7 +20,7 @@ export function OrderList({ orders, role }: OrderListProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {orders.map((order) => (
-        <OrderCard key={order.id} order={order} role={role} />
+        <OrderCard key={order.id} order={order} role={role} menuItems={menuItems} />
       ))}
     </div>
   );

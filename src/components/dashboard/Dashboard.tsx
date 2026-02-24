@@ -1,6 +1,6 @@
 'use client';
 
-import type { Order, DailySummary, UserRole, OrderStatus } from '@/lib/types';
+import type { Order, DailySummary, UserRole, OrderStatus, MenuItem } from '@/lib/types';
 import { SalesSummary } from './SalesSummary';
 import { OrderFilters } from './OrderFilters';
 import { OrderList } from './OrderList';
@@ -10,6 +10,7 @@ interface DashboardProps {
   summary: DailySummary;
   role: UserRole;
   statusFilter?: OrderStatus;
+  menuItems: MenuItem[];
 }
 
 export function Dashboard({
@@ -17,6 +18,7 @@ export function Dashboard({
   summary,
   role,
   statusFilter,
+  menuItems,
 }: DashboardProps) {
 
   return (
@@ -25,7 +27,7 @@ export function Dashboard({
       <div>
         <h2 className="text-2xl font-bold tracking-tight mb-4 font-headline">Active Orders</h2>
         <OrderFilters currentFilter={statusFilter} />
-        <OrderList orders={orders} role={role} />
+        <OrderList orders={orders} role={role} menuItems={menuItems} />
       </div>
     </div>
   );

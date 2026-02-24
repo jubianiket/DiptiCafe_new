@@ -3,7 +3,7 @@ import { Dashboard } from '@/components/dashboard/Dashboard';
 import { getOrders, getDailySummary } from '@/lib/actions/orders';
 import type { OrderStatus } from '@/lib/types';
 import { getRole } from '@/lib/actions/auth';
-import type { UserRole } from '@/lib/types';
+import { getMenuItems } from '@/lib/actions/menu';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +17,11 @@ export default async function Home({
   
   const orders = await getOrders({ status });
   const summary = await getDailySummary();
+  const menuItems = await getMenuItems();
 
   return (
     <>
-      <Header role={role} />
+      <Header role={role} menuItems={menuItems} />
       <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
         <Dashboard
           key={status || 'all'}
@@ -28,6 +29,7 @@ export default async function Home({
           summary={summary}
           role={role}
           statusFilter={status}
+          menuItems={menuItems}
         />
       </main>
     </>

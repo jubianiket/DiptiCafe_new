@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Order } from '@/lib/types';
+import type { Order, MenuItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -16,9 +16,10 @@ import { Pencil } from 'lucide-react';
 
 interface EditOrderSheetProps {
   order: Order;
+  menuItems: MenuItem[];
 }
 
-export function EditOrderSheet({ order }: EditOrderSheetProps) {
+export function EditOrderSheet({ order, menuItems }: EditOrderSheetProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -36,7 +37,7 @@ export function EditOrderSheet({ order }: EditOrderSheetProps) {
             Add new items to this existing order.
           </SheetDescription>
         </SheetHeader>
-        <EditOrderForm order={order} onFormSubmit={() => setOpen(false)} />
+        <EditOrderForm order={order} onFormSubmit={() => setOpen(false)} menuItems={menuItems} />
       </SheetContent>
     </Sheet>
   );

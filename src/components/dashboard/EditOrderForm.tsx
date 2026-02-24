@@ -1,8 +1,8 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useTransition, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { addItemsToOrder } from '@/lib/actions/orders';
 import { Plus, Trash2, Loader } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Order } from '@/lib/types';
+import type { Order, MenuItem } from '@/lib/types';
 import { Separator } from '../ui/separator';
+import { Combobox } from '@/components/ui/combobox';
 
 const itemSchema = z.object({
   item_name: z.string().min(1, 'Name is required'),
@@ -30,9 +31,10 @@ type FormValues = z.infer<typeof formSchema>;
 interface EditOrderFormProps {
   order: Order;
   onFormSubmit: () => void;
+  menuItems: MenuItem[];
 }
 
-export function EditOrderForm({ order, onFormSubmit }: EditOrderFormProps) {
+export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
@@ -52,6 +54,8 @@ export function EditOrderForm({ order, onFormSubmit }: EditOrderFormProps) {
   const watchedItems = form.watch('items');
   const newItemsTotal = watchedItems.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 0), 0);
   const newGrandTotal = order.total_amount + newItemsTotal;
+
+  const menuOptions = useMemo(() => menuItems.map(item => ({ label: item.name, value: item.name })), [menuItems]);
 
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
@@ -115,15 +119,37 @@ export function EditOrderForm({ order, onFormSubmit }: EditOrderFormProps) {
                 <div className="grid grid-cols-3 gap-2 flex-1">
                   <div className="col-span-3">
                     <Label htmlFor={`items.${index}.item_name`} className="text-xs">Name</Label>
-                    <Input {...form.register(`items.${index}.item_name`)} id={`items.${index}.item_name`} placeholder="e.g., Extra Fries"/>
+                    <Controller
+                        control={form.control}
+                        name={`items.${index}.item_name`}
+                        render={({ field }) => (
+                            <Combobox
+                                options={menuOptions}
+                                value={field.value}
+                                onChange={(value) => {
+                                    field.onChange(value);
+                                    const menuItem = menuItems.find(i => i.name.toLowerCase() === value.toLowerCase());
+                                    if (menuItem) {
+                                        form.setValue(`items.${index}.price`, menuItem.price, { shouldValidate: true });
+                                    }
+                                }}
+                                placeholder="Search for an item..."
+                                searchPlaceholder="Search menu items..."
+                                emptyPlaceholder="No item found."
+                            />
+                        )}
+                    />
+                    {form.formState.errors.items?.[index]?.item_name && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.items[index]?.item_name?.message}</p>}
                   </div>
                   <div>
                     <Label htmlFor={`items.${index}.quantity`} className="text-xs">Qty</Label>
                     <Input type="number" {...form.register(`items.${index}.quantity`)} id={`items.${index}.quantity`}/>
+                    {form.formState.errors.items?.[index]?.quantity && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.items[index]?.quantity?.message}</p>}
                   </div>
                   <div>
                     <Label htmlFor={`items.${index}.price`} className="text-xs">Price</Label>
                     <Input type="number" step="0.01" {...form.register(`items.${index}.price`)} id={`items.${index}.price`}/>
+                    {form.formState.errors.items?.[index]?.price && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.items[index]?.price?.message}</p>}
                   </div>
                 </div>
                 <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} className="shrink-0">

@@ -12,8 +12,13 @@ import {
 } from '@/components/ui/sheet';
 import { NewOrderForm } from './NewOrderForm';
 import { Plus } from 'lucide-react';
+import type { MenuItem } from '@/lib/types';
 
-export function NewOrderSheet() {
+interface NewOrderSheetProps {
+  menuItems: MenuItem[];
+}
+
+export function NewOrderSheet({ menuItems }: NewOrderSheetProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -31,7 +36,7 @@ export function NewOrderSheet() {
             Add customer details and items to create a new order.
           </SheetDescription>
         </SheetHeader>
-        <NewOrderForm onFormSubmit={() => setOpen(false)} />
+        <NewOrderForm onFormSubmit={() => setOpen(false)} menuItems={menuItems} />
       </SheetContent>
     </Sheet>
   );

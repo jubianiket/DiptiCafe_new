@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { updateOrderStatus, deleteOrder } from '@/lib/actions/orders';
-import type { Order, UserRole, OrderStatus } from '@/lib/types';
+import type { Order, UserRole, OrderStatus, MenuItem } from '@/lib/types';
 import {
   Hourglass,
   CheckCircle,
@@ -40,6 +40,7 @@ import { EditOrderSheet } from './EditOrderSheet';
 interface OrderCardProps {
   order: Order;
   role: UserRole;
+  menuItems: MenuItem[];
 }
 
 const statusInfo: Record<
@@ -66,7 +67,7 @@ const statusInfo: Record<
   },
 };
 
-export function OrderCard({ order, role }: OrderCardProps) {
+export function OrderCard({ order, role, menuItems }: OrderCardProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const { toast } = useToast();
@@ -156,7 +157,7 @@ export function OrderCard({ order, role }: OrderCardProps) {
           </Button>
         )}
         
-        {order.status !== 'paid' && <EditOrderSheet order={order} />}
+        {order.status !== 'paid' && <EditOrderSheet order={order} menuItems={menuItems} />}
 
         {role === 'Admin' && order.status !== 'paid' && (
           <AlertDialog>
