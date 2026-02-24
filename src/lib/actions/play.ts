@@ -3,6 +3,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { PlaySession, TableType } from '@/lib/types';
+import { formatDistance } from 'date-fns';
 
 function getSupabaseClient() {
   const cookieStore = cookies();
@@ -77,17 +78,46 @@ export async function startPlaySession(tableType: TableType) {
 
 export async function endPlaySession(id: string) {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+
+    const { data: sessionToEnd, error: fetchError } = await supabase
         .from('play_sessions')
-        .update({ status: 'finished', end_time: new Date().toISOString() })
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (fetchError || !sessionToEnd) {
+        console.error('Failed to fetch session to end:', fetchError?.message);
+        return { error: 'Could not find the session to end.' };
+    }
+
+    if (sessionToEnd.status === 'finished') {
+        return { error: 'Session has already been finished.' };
+    }
+    
+    const endTime = new Date();
+    const startTime = new Date(sessionToEnd.start_time);
+    const durationMs = endTime.getTime() - startTime.getTime();
+    
+    const TABLE_RATES = {
+      pool: 120,
+      snooker: 150,
+    };
+    const rate = TABLE_RATES[sessionToEnd.table_type];
+    const cost = (durationMs / (1000 * 60 * 60)) * rate;
+    const durationStr = formatDistance(endTime, startTime, { includeSeconds: true });
+
+
+    const { data: updatedSession, error: updateError } = await supabase
+        .from('play_sessions')
+        .update({ status: 'finished', end_time: endTime.toISOString() })
         .eq('id', id)
         .select()
         .single();
         
-    if (error) {
-        console.error('Failed to end play session:', error.message);
+    if (updateError) {
+        console.error('Failed to end play session:', updateError.message);
         return { error: 'Database error ending session.' };
     }
 
-    return { success: true, session: data };
+    return { success: true, session: updatedSession, cost, durationStr };
 }
