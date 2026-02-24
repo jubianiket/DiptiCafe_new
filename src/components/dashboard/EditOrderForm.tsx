@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { addItemsToOrder } from '@/lib/actions/orders';
+import { updateOrder } from '@/lib/actions/orders';
 import { Plus, Trash2, Loader } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Order, MenuItem } from '@/lib/types';
@@ -23,7 +23,12 @@ const itemSchema = z.object({
 });
 
 const formSchema = z.object({
-  items: z.array(itemSchema).min(1, 'You must add at least one new item.'),
+  table_no: z.string().optional(),
+  customer_name: z.string().optional(),
+  items: z.array(itemSchema),
+}).refine(data => data.table_no || data.customer_name, {
+  message: "Either Table Number or Customer Name is required.",
+  path: ["customer_name"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -42,7 +47,9 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      items: [{ item_name: '', quantity: 1, price: 0 }],
+      customer_name: order.customer_name ?? '',
+      table_no: order.table_no ?? '',
+      items: [],
     },
   });
 
@@ -60,26 +67,29 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
       const formData = new FormData();
-      formData.append('items', JSON.stringify(data.items));
+      if (data.table_no) formData.append('table_no', data.table_no);
+      if (data.customer_name) formData.append('customer_name', data.customer_name);
+      
+      if (data.items.length > 0) {
+        formData.append('items', JSON.stringify(data.items));
+      }
 
-      const result = await addItemsToOrder(order.id, formData);
+      const result = await updateOrder(order.id, formData);
 
       if (result?.error) {
-        let errorMessage = 'Could not add items to order.';
-        if (typeof result.error === 'string') {
-          errorMessage = result.error;
-        } else {
-            const formError = (result.error as any).form;
-            const itemsError = (result.error as any).items;
-            if (formError) {
-                errorMessage = Array.isArray(formError) ? formError.join(', ') : formError;
-            } else if (itemsError) {
-                errorMessage = Array.isArray(itemsError) ? itemsError.join(', ') : itemsError;
+        if (typeof result.error !== 'string') {
+          for (const [field, messages] of Object.entries(result.error)) {
+            if (field === 'form' && messages) {
+              toast({ title: 'Error', description: messages.join(', '), variant: 'destructive' });
+            } else {
+              form.setError(field as keyof FormValues, { type: 'manual', message: messages?.join(', ') });
             }
+          }
+        } else {
+          toast({ title: 'Error', description: result.error, variant: 'destructive' });
         }
-        toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
       } else {
-        toast({ title: 'Success', description: 'Items added to order.' });
+        toast({ title: 'Success', description: 'Order updated successfully.' });
         form.reset();
         onFormSubmit();
         router.refresh();
@@ -91,6 +101,20 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-6 h-[calc(100vh-8rem)] flex flex-col">
        <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4">
+          <div>
+            <Label htmlFor="customer_name">Customer Name</Label>
+            <Input id="customer_name" {...form.register('customer_name')} />
+             {form.formState.errors.customer_name && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.customer_name.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="table_no">Table Number</Label>
+            <Input id="table_no" {...form.register('table_no')} />
+             {form.formState.errors.table_no && <p className="text-sm font-medium text-destructive mt-1">{form.formState.errors.table_no.message}</p>}
+          </div>
+          
+          <Separator />
+
           <div className="space-y-2">
             <Label>Existing Items</Label>
             <div className='p-4 border rounded-lg bg-muted/50 text-sm'>
@@ -171,7 +195,7 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
             <span>Rs. {newGrandTotal.toFixed(2)}</span>
         </div>
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? <Loader className="animate-spin" /> : 'Add Items to Order'}
+          {isPending ? <Loader className="animate-spin" /> : 'Update Order'}
         </Button>
       </div>
     </form>

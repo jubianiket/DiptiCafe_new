@@ -188,60 +188,78 @@ export async function deleteOrder(id: string) {
   return { success: true };
 }
 
-export async function addItemsToOrder(orderId: string, formData: FormData) {
+const updateOrderSchema = z.object({
+  table_no: z.string().optional(),
+  customer_name: z.string().optional(),
+  items: z.array(formItemSchema).optional(), // items are optional
+}).refine(data => data.table_no || data.customer_name, {
+  message: "Either Table Number or Customer Name is required.",
+  path: ["customer_name"],
+});
+
+export async function updateOrder(orderId: string, formData: FormData) {
   const rawData = {
-    items: JSON.parse(formData.get('items') as string),
+    table_no: (formData.get('table_no') as string) || undefined,
+    customer_name: (formData.get('customer_name') as string) || undefined,
+    items: formData.has('items') ? JSON.parse(formData.get('items') as string) : undefined,
   };
 
-  const itemsSchema = z.object({ items: z.array(formItemSchema).min(1, 'At least one new item is required.') });
-  const validation = itemsSchema.safeParse({ items: rawData.items });
+  const validation = updateOrderSchema.safeParse(rawData);
 
   if (!validation.success) {
     return { error: validation.error.flatten().fieldErrors };
   }
 
+  const { items: newItems, ...detailsToUpdate } = validation.data;
   const supabase = getSupabaseClient();
   
-  // 1. Get current order to find its total
-  const { data: existingOrder, error: fetchError } = await supabase
-    .from('orders')
-    .select('total_amount')
-    .eq('id', orderId)
-    .single();
-
-  if (fetchError || !existingOrder) {
-    console.error('Failed to fetch existing order:', fetchError?.message);
-    return { error: { form: ['Could not find the order to update.'] } };
+  let newItemsTotal = 0;
+  if (newItems && newItems.length > 0) {
+      const newOrderItemsData = newItems.map(item => ({
+        order_id: orderId,
+        item_name: item.item_name,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+    
+      const { error: itemsError } = await supabase.from('order_items').insert(newOrderItemsData);
+    
+      if (itemsError) {
+        console.error('Supabase add items error:', itemsError.message);
+        return { error: { form: ['Failed to add new items to the order.'] } };
+      }
+      newItemsTotal = newItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   }
 
-  const newItems = validation.data.items;
-  const newItemsTotal = newItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const orderUpdatePayload: { [key: string]: any } = { ...detailsToUpdate };
 
-  // 2. Prepare and insert new order items
-  const newOrderItemsData = newItems.map(item => ({
-    order_id: orderId,
-    item_name: item.item_name,
-    quantity: item.quantity,
-    price: item.price,
-  }));
-
-  const { error: itemsError } = await supabase.from('order_items').insert(newOrderItemsData);
-
-  if (itemsError) {
-    console.error('Supabase add items error:', itemsError.message);
-    return { error: { form: ['Failed to add new items to the order.'] } };
-  }
-
-  // 3. Update the total amount on the order
-  const newTotalAmount = existingOrder.total_amount + newItemsTotal;
-  const { error: updateError } = await supabase
-    .from('orders')
-    .update({ total_amount: newTotalAmount })
-    .eq('id', orderId);
+  if (newItemsTotal > 0) {
+      const { data: existingOrder, error: fetchError } = await supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('id', orderId)
+        .single();
   
-  if (updateError) {
-    console.error('Supabase update total error:', updateError.message);
-    return { error: { form: ['Failed to update order total. Please check order details manually.'] } };
+      if (fetchError || !existingOrder) {
+        console.error('Failed to fetch existing order:', fetchError?.message);
+        return { error: { form: ['Could not find the order to update.'] } };
+      }
+      
+      orderUpdatePayload.total_amount = existingOrder.total_amount + newItemsTotal;
+  }
+  
+  // only update if there's something to update
+  if (Object.keys(orderUpdatePayload).length > 0) {
+      // Supabase client ignores undefined keys, so this is safe.
+      const { error: updateError } = await supabase
+          .from('orders')
+          .update(orderUpdatePayload)
+          .eq('id', orderId);
+      
+      if (updateError) {
+          console.error('Supabase update order error:', updateError.message);
+          return { error: { form: ['Failed to update order details.'] } };
+      }
   }
 
   return { success: true };
