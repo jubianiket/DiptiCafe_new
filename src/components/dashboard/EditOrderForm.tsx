@@ -14,6 +14,8 @@ import { Plus, Trash2, Loader } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Order, MenuItem } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
+import { VoiceOrderMic } from './VoiceOrderMic';
+import type { VoiceOrderOutput } from '@/ai/flows/voice-order-flow';
 
 const itemSchema = z.object({
   id: z.string().optional(), // The order_item UUID from the DB
@@ -55,7 +57,7 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -64,6 +66,26 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
   const grandTotal = watchedItems.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 0), 0);
 
   const menuOptions = useMemo(() => menuItems.map(item => ({ label: item.name, value: item.name })), [menuItems]);
+
+  const handleVoiceOrderParsed = (data: VoiceOrderOutput) => {
+    if (data.customer_name) form.setValue('customer_name', data.customer_name);
+    if (data.table_no) form.setValue('table_no', data.table_no);
+    if (data.phone_number) form.setValue('phone_number', data.phone_number);
+
+    if (data.items && data.items.length > 0) {
+      const parsedItems = data.items.map(voiceItem => {
+        const menuItem = menuItems.find(mi => mi.name.toLowerCase().includes(voiceItem.item_name.toLowerCase()));
+        return {
+          item_name: menuItem ? menuItem.name : voiceItem.item_name,
+          quantity: voiceItem.quantity,
+          price: menuItem ? menuItem.price : 0
+        };
+      });
+      // For editing, we append voice-recognized items instead of replacing
+      // to avoid accidentally deleting existing ones the user might want to keep
+      parsedItems.forEach(item => append(item));
+    }
+  };
 
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
@@ -98,6 +120,11 @@ export function EditOrderForm({ order, onFormSubmit, menuItems }: EditOrderFormP
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-6 h-[calc(100vh-8rem)] flex flex-col">
+       <div className="flex justify-between items-center mb-2 px-1">
+          <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Voice Update</Label>
+          <VoiceOrderMic onOrderParsed={handleVoiceOrderParsed} />
+       </div>
+
        <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4">
           <div>

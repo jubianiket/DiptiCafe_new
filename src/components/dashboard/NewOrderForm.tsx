@@ -14,6 +14,8 @@ import { Plus, Trash2, Loader } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Combobox } from '@/components/ui/combobox';
 import type { MenuItem } from '@/lib/types';
+import { VoiceOrderMic } from './VoiceOrderMic';
+import type { VoiceOrderOutput } from '@/ai/flows/voice-order-flow';
 
 const itemSchema = z.object({
   item_name: z.string().min(1, 'Name is required'),
@@ -53,7 +55,7 @@ export function NewOrderForm({ onFormSubmit, menuItems }: NewOrderFormProps) {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -62,6 +64,24 @@ export function NewOrderForm({ onFormSubmit, menuItems }: NewOrderFormProps) {
   const total = watchedItems.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 0), 0);
   
   const menuOptions = useMemo(() => menuItems.map(item => ({ label: item.name, value: item.name })), [menuItems]);
+
+  const handleVoiceOrderParsed = (data: VoiceOrderOutput) => {
+    if (data.customer_name) form.setValue('customer_name', data.customer_name);
+    if (data.table_no) form.setValue('table_no', data.table_no);
+    if (data.phone_number) form.setValue('phone_number', data.phone_number);
+
+    if (data.items && data.items.length > 0) {
+      const parsedItems = data.items.map(voiceItem => {
+        const menuItem = menuItems.find(mi => mi.name.toLowerCase().includes(voiceItem.item_name.toLowerCase()));
+        return {
+          item_name: menuItem ? menuItem.name : voiceItem.item_name,
+          quantity: voiceItem.quantity,
+          price: menuItem ? menuItem.price : 0
+        };
+      });
+      replace(parsedItems);
+    }
+  };
 
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
@@ -96,6 +116,11 @@ export function NewOrderForm({ onFormSubmit, menuItems }: NewOrderFormProps) {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-6 h-[calc(100vh-8rem)] flex flex-col">
+       <div className="flex justify-between items-center mb-2 px-1">
+          <Label className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Quick Voice Order</Label>
+          <VoiceOrderMic onOrderParsed={handleVoiceOrderParsed} />
+       </div>
+
        <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4">
           <div>
