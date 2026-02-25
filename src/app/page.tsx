@@ -1,6 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Dashboard } from '@/components/dashboard/Dashboard';
-import { getOrders, getDailySummary } from '@/lib/actions/orders';
+import { getOrders, getDailySummary, getWeeklyRevenue } from '@/lib/actions/orders';
 import type { OrderStatus } from '@/lib/types';
 import { getRole } from '@/lib/actions/auth';
 import { getMenuItems } from '@/lib/actions/menu';
@@ -18,6 +18,7 @@ export default async function Home({
   const orders = await getOrders({ status });
   const summary = await getDailySummary();
   const menuItems = await getMenuItems();
+  const weeklyRevenue = role === 'Admin' ? await getWeeklyRevenue() : undefined;
 
   return (
     <>
@@ -30,6 +31,7 @@ export default async function Home({
           role={role}
           statusFilter={status}
           menuItems={menuItems}
+          weeklyRevenue={weeklyRevenue}
         />
       </main>
     </>

@@ -172,6 +172,50 @@ export async function getDailySummary(): Promise<DailySummary> {
   return { total_orders: count ?? 0, total_revenue };
 }
 
+export async function getWeeklyRevenue(): Promise<{ date: string; revenue: number }[]> {
+  const supabase = getSupabaseClient();
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(today.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('created_at, total_amount')
+    .eq('status', 'paid')
+    .gte('created_at', sevenDaysAgo.toISOString())
+    .lte('created_at', today.toISOString())
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Failed to fetch weekly revenue:', error);
+    return [];
+  }
+
+  // Create map for all 7 days to ensure we have entries for days with zero revenue
+  const dailyData: Record<string, number> = {};
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(sevenDaysAgo);
+    d.setDate(sevenDaysAgo.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    dailyData[dateStr] = 0;
+  }
+
+  data?.forEach(order => {
+    const dateStr = new Date(order.created_at).toISOString().split('T')[0];
+    if (dailyData[dateStr] !== undefined) {
+      dailyData[dateStr] += order.total_amount;
+    }
+  });
+
+  return Object.entries(dailyData).map(([date, revenue]) => ({
+    date,
+    revenue
+  }));
+}
+
 export async function updateOrderStatus(id: string, status: OrderStatus) {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from('orders').update({ status }).eq('id', id);
