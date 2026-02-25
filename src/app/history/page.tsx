@@ -1,8 +1,8 @@
 import { Header } from '@/components/layout/Header';
-import { OrderList } from '@/components/dashboard/OrderList';
 import { getOrders } from '@/lib/actions/orders';
 import { getRole } from '@/lib/actions/auth';
 import { getMenuItems } from '@/lib/actions/menu';
+import { HistoryList } from '@/components/history/HistoryList';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,9 +19,9 @@ export default async function HistoryPage() {
           <h1 className="text-lg font-semibold md:text-2xl">Order History</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Showing all completed and paid orders.
+          Showing all completed and paid orders grouped by date.
         </p>
-        <OrderList orders={paidOrders} role={role} menuItems={menuItems} />
+        <HistoryList orders={paidOrders} role={role} menuItems={menuItems} />
       </main>
     </>
   );
