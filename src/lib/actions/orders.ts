@@ -3,7 +3,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import type { OrderStatus, DailySummary, Order, RevenueRange, RevenueDataPoint } from '@/lib/types';
+import type { OrderStatus, DailySummary, Order, RevenueRange, RevenueDataPoint, ItemPopularityData } from '@/lib/types';
 import { adjustInventoryStock } from './inventory';
 import { 
   startOfDay, 
@@ -196,6 +196,7 @@ export async function getRevenueReport(range: RevenueRange = '5days'): Promise<R
   let startDate: Date;
 
   if (range === '5days') startDate = subDays(startOfDay(now), 4);
+  else if (range === '7days') startDate = subDays(startOfDay(now), 6);
   else if (range === '15days') startDate = subDays(startOfDay(now), 14);
   else if (range === 'month') startDate = subMonths(startOfMonth(now), 11);
   else if (range === 'year') startDate = subYears(startOfYear(now), 4);
@@ -215,8 +216,8 @@ export async function getRevenueReport(range: RevenueRange = '5days'): Promise<R
 
   const results: RevenueDataPoint[] = [];
 
-  if (range === '5days' || range === '15days') {
-    const days = range === '5days' ? 5 : 15;
+  if (range === '5days' || range === '7days' || range === '15days') {
+    const days = range === '5days' ? 5 : range === '7days' ? 7 : 15;
     for (let i = 0; i < days; i++) {
       const d = subDays(startOfDay(now), days - 1 - i);
       const total = data
@@ -243,6 +244,54 @@ export async function getRevenueReport(range: RevenueRange = '5days'): Promise<R
   }
 
   return results;
+}
+
+export async function getItemPopularityReport(range: RevenueRange = '7days'): Promise<ItemPopularityData[]> {
+  const supabase = getSupabaseClient();
+  const now = new Date();
+  let startDate: Date;
+
+  if (range === '5days') startDate = subDays(startOfDay(now), 4);
+  else if (range === '7days') startDate = subDays(startOfDay(now), 6);
+  else if (range === '15days') startDate = subDays(startOfDay(now), 14);
+  else if (range === 'month') startDate = subMonths(startOfMonth(now), 11);
+  else if (range === 'year') startDate = subYears(startOfYear(now), 4);
+  else startDate = subDays(startOfDay(now), 6);
+
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('item_name, quantity, orders!inner(created_at, status)')
+    .eq('orders.status', 'paid')
+    .gte('orders.created_at', startDate.toISOString());
+
+  if (error) {
+    console.error('Failed to fetch item popularity report:', error);
+    return [];
+  }
+
+  const totals: Record<string, number> = {};
+  data?.forEach(item => {
+    totals[item.item_name] = (totals[item.item_name] || 0) + item.quantity;
+  });
+
+  const colors = [
+    'hsl(var(--primary))',
+    'hsl(var(--accent))',
+    '#3b82f6',
+    '#10b981',
+    '#f59e0b',
+    '#ef4444',
+    '#8b5cf6',
+    '#ec4899'
+  ];
+
+  return Object.entries(totals)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value], index) => ({
+      name,
+      value,
+      fill: colors[index % colors.length]
+    }));
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {

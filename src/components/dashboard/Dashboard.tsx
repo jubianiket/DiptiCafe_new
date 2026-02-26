@@ -1,10 +1,11 @@
 'use client';
 
-import type { Order, DailySummary, UserRole, OrderStatus, MenuItem, RevenueRange, RevenueDataPoint } from '@/lib/types';
+import type { Order, DailySummary, UserRole, OrderStatus, MenuItem, RevenueRange, RevenueDataPoint, ItemPopularityData } from '@/lib/types';
 import { SalesSummary } from './SalesSummary';
 import { OrderFilters } from './OrderFilters';
 import { OrderList } from './OrderList';
 import { RevenueChart } from './RevenueChart';
+import { ItemPopularityChart } from './ItemPopularityChart';
 
 interface DashboardProps {
   orders: Order[];
@@ -14,6 +15,7 @@ interface DashboardProps {
   revenueRange: RevenueRange;
   menuItems: MenuItem[];
   revenueData?: RevenueDataPoint[];
+  popularityData?: ItemPopularityData[];
 }
 
 export function Dashboard({
@@ -24,15 +26,19 @@ export function Dashboard({
   revenueRange,
   menuItems,
   revenueData,
+  popularityData,
 }: DashboardProps) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-6">
+        <div className="space-y-6">
              <SalesSummary summary={summary} role={role} />
-             {role === 'Admin' && revenueData && (
-                <RevenueChart data={revenueData} currentRange={revenueRange} />
+             {role === 'Admin' && revenueData && popularityData && (
+                <div className="grid gap-6 md:grid-cols-2">
+                    <RevenueChart data={revenueData} currentRange={revenueRange} />
+                    <ItemPopularityChart data={popularityData} currentRange={revenueRange} />
+                </div>
              )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Dashboard } from '@/components/dashboard/Dashboard';
-import { getOrders, getDailySummary, getRevenueReport } from '@/lib/actions/orders';
+import { getOrders, getDailySummary, getRevenueReport, getItemPopularityReport } from '@/lib/actions/orders';
 import type { OrderStatus, RevenueRange } from '@/lib/types';
 import { getRole } from '@/lib/actions/auth';
 import { getMenuItems } from '@/lib/actions/menu';
@@ -13,13 +13,14 @@ export default async function Home({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const status = searchParams.status as OrderStatus | undefined;
-  const range = (searchParams.range as RevenueRange) || '5days';
+  const range = (searchParams.range as RevenueRange) || '7days';
   const role = await getRole();
   
   const orders = await getOrders({ status });
   const summary = await getDailySummary();
   const menuItems = await getMenuItems();
   const revenueData = role === 'Admin' ? await getRevenueReport(range) : undefined;
+  const popularityData = role === 'Admin' ? await getItemPopularityReport(range) : undefined;
 
   return (
     <>
@@ -34,6 +35,7 @@ export default async function Home({
           revenueRange={range}
           menuItems={menuItems}
           revenueData={revenueData}
+          popularityData={popularityData}
         />
       </main>
     </>

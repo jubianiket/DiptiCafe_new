@@ -45,7 +45,7 @@ export function RevenueChart({ data, currentRange }: RevenueChartProps) {
   const formattedData = data.map((item) => {
     const date = parseISO(item.date);
     let label = '';
-    if (currentRange === '5days' || currentRange === '15days') {
+    if (currentRange === '5days' || currentRange === '7days' || currentRange === '15days') {
       label = format(date, "dd MMM");
     } else if (currentRange === 'month') {
       label = format(date, "MMM yy");
@@ -65,7 +65,7 @@ export function RevenueChart({ data, currentRange }: RevenueChartProps) {
   }
 
   return (
-    <Card className="col-span-full">
+    <Card className="flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Revenue Insights</CardTitle>
@@ -77,6 +77,7 @@ export function RevenueChart({ data, currentRange }: RevenueChartProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="5days">Last 5 Days</SelectItem>
+            <SelectItem value="7days">Last 7 Days</SelectItem>
             <SelectItem value="15days">Last 15 Days</SelectItem>
             <SelectItem value="month">Month Wise</SelectItem>
             <SelectItem value="year">Year Wise</SelectItem>
