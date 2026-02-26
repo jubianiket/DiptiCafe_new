@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import type { OrderStatus, DailySummary, Order } from '@/lib/types';
+import { adjustInventoryStock } from './inventory';
 
 // Schema for items coming from the form
 const formItemSchema = z.object({
@@ -119,6 +120,11 @@ export async function createOrder(formData: FormData) {
     return { error: { form: ['Failed to save order items. Order creation was rolled back.'] } };
   }
 
+  // 3. Adjust Inventory (Subtract stock)
+  for (const item of items) {
+    await adjustInventoryStock(item.item_name, -item.quantity);
+  }
+
   return { success: true };
 }
 
@@ -229,6 +235,25 @@ export async function updateOrderStatus(id: string, status: OrderStatus) {
 
 export async function deleteOrder(id: string) {
   const supabase = getSupabaseClient();
+
+  // 1. Fetch the order and its items first to return them to inventory
+  const { data: order, error: fetchError } = await supabase
+    .from('orders')
+    .select('*, items:order_items(*)')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !order) {
+    console.error('Failed to fetch order for deletion:', fetchError?.message);
+    return { error: 'Order not found.' };
+  }
+
+  // 2. Return items to inventory
+  for (const item of order.items) {
+    await adjustInventoryStock(item.item_name, item.quantity);
+  }
+
+  // 3. Delete the order
   const { error } = await supabase.from('orders').delete().eq('id', id);
 
   if (error) {
@@ -263,10 +288,28 @@ export async function updateOrder(orderId: string, formData: FormData) {
     return { error: validation.error.flatten().fieldErrors };
   }
 
-  const { items, ...detailsToUpdate } = validation.data;
+  const { items: newItems, ...detailsToUpdate } = validation.data;
   const supabase = getSupabaseClient();
 
-  // 1. Delete all existing items for the order
+  // 1. Fetch current items to reconcile inventory
+  const { data: oldItems, error: oldItemsError } = await supabase
+    .from('order_items')
+    .select('*')
+    .eq('order_id', orderId);
+
+  if (oldItemsError) {
+    console.error('Failed to fetch old items for update:', oldItemsError.message);
+    return { error: { form: ['Failed to fetch existing items for reconciliation.'] } };
+  }
+
+  // 2. Reconcile Inventory (Add back old quantities)
+  if (oldItems) {
+    for (const item of oldItems) {
+      await adjustInventoryStock(item.item_name, item.quantity);
+    }
+  }
+
+  // 3. Delete all existing items for the order
   const { error: deleteError } = await supabase
     .from('order_items')
     .delete()
@@ -277,9 +320,9 @@ export async function updateOrder(orderId: string, formData: FormData) {
     return { error: { form: ['Failed to update items. Could not clear old items.'] } };
   }
 
-  // 2. Prepare and insert the new set of items
-  const newTotalAmount = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const newOrderItemsData = items.map(item => ({
+  // 4. Prepare and insert the new set of items
+  const newTotalAmount = newItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const newOrderItemsData = newItems.map(item => ({
     order_id: orderId,
     item_name: item.item_name,
     quantity: item.quantity,
@@ -290,18 +333,20 @@ export async function updateOrder(orderId: string, formData: FormData) {
 
   if (insertError) {
     console.error('Supabase insert new items error:', insertError.message);
-    // In a real production app, you'd want to wrap this in a transaction or at least
-    // attempt to restore the previously deleted items.
-    return { error: { form: ['Failed to save new item list after clearing the old one. Order may be in an inconsistent state.'] } };
+    return { error: { form: ['Failed to save new item list.'] } };
+  }
+
+  // 5. Adjust Inventory with new items (Subtract quantities)
+  for (const item of newItems) {
+    await adjustInventoryStock(item.item_name, -item.quantity);
   }
   
-  // 3. Update the order itself with new total and details
+  // 6. Update the order itself with new total and details
   const orderUpdatePayload = {
     ...detailsToUpdate,
     total_amount: newTotalAmount,
   };
   
-  // Supabase client ignores undefined keys, so this is safe.
   const { error: updateError } = await supabase
       .from('orders')
       .update(orderUpdatePayload)

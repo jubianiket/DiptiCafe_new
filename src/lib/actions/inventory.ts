@@ -129,3 +129,36 @@ export async function deleteInventoryItem(id: string) {
   }
   return { success: true };
 }
+
+/**
+ * Adjusts the stock of an inventory item by a given delta.
+ * If the item does not exist in inventory, it does nothing.
+ * @param itemName The name of the item to adjust.
+ * @param quantityDelta Positive to add to stock, negative to subtract.
+ */
+export async function adjustInventoryStock(itemName: string, quantityDelta: number) {
+  const supabase = getSupabaseClient();
+  
+  // 1. Find the item
+  const { data: item, error: fetchError } = await supabase
+    .from('inventory')
+    .select('id, quantity')
+    .eq('name', itemName)
+    .single();
+
+  if (fetchError || !item) {
+    // Item not found in inventory, skip silently as it might be a service/non-stocked item
+    return;
+  }
+
+  // 2. Update the quantity
+  const newQuantity = item.quantity + quantityDelta;
+  const { error: updateError } = await supabase
+    .from('inventory')
+    .update({ quantity: newQuantity })
+    .eq('id', item.id);
+
+  if (updateError) {
+    console.error(`Failed to adjust inventory for ${itemName}:`, updateError.message);
+  }
+}
