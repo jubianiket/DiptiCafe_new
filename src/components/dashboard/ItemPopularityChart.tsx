@@ -50,6 +50,8 @@ export function ItemPopularityChart({ data, currentRange }: ItemPopularityChartP
     };
   });
 
+  const totalValue = data.reduce((acc, curr) => acc + curr.value, 0);
+
   if (data.length === 0) {
       return (
         <Card className="flex flex-col h-full">
@@ -87,7 +89,20 @@ export function ItemPopularityChart({ data, currentRange }: ItemPopularityChartP
             <PieChart>
               <ChartTooltip
                 cursor={false}
-                content={<ChartTooltipContent hideLabel />}
+                content={
+                  <ChartTooltipContent 
+                    hideLabel 
+                    formatter={(value, name) => {
+                      const percent = totalValue > 0 ? ((Number(value) / totalValue) * 100).toFixed(1) : 0;
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{name}:</span>
+                          <span>{value} ({percent}%)</span>
+                        </div>
+                      );
+                    }}
+                  />
+                }
               />
               <Pie
                 data={data}
