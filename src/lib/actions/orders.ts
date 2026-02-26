@@ -285,13 +285,17 @@ export async function getItemPopularityReport(range: RevenueRange = '7days'): Pr
     '#ec4899'
   ];
 
-  return Object.entries(totals)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, value], index) => ({
-      name,
-      value,
-      fill: colors[index % colors.length]
-    }));
+  const sortedResults = Object.entries(totals)
+    .sort((a, b) => b[1] - a[1]);
+
+  // Limit to top 8 items to prevent cluttered legend
+  const top8 = sortedResults.slice(0, 8);
+  
+  return top8.map(([name, value], index) => ({
+    name,
+    value,
+    fill: colors[index % colors.length]
+  }));
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {

@@ -43,7 +43,7 @@ export function ItemPopularityChart({ data, currentRange }: ItemPopularityChartP
   }
 
   const chartConfig: ChartConfig = {};
-  data.forEach((item, index) => {
+  data.forEach((item) => {
     chartConfig[item.name] = {
       label: item.name,
       color: item.fill,
@@ -52,7 +52,7 @@ export function ItemPopularityChart({ data, currentRange }: ItemPopularityChartP
 
   if (data.length === 0) {
       return (
-        <Card className="flex flex-col">
+        <Card className="flex flex-col h-full">
           <CardHeader>
             <CardTitle>Item Popularity</CardTitle>
             <CardDescription>No sales data for the selected range.</CardDescription>
@@ -62,11 +62,11 @@ export function ItemPopularityChart({ data, currentRange }: ItemPopularityChartP
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Item Popularity</CardTitle>
-          <CardDescription>Most ordered items by quantity</CardDescription>
+          <CardDescription>Most ordered items (Top 8)</CardDescription>
         </div>
         <Select value={currentRange} onValueChange={handleRangeChange}>
           <SelectTrigger className="w-[150px]">
@@ -81,8 +81,8 @@ export function ItemPopularityChart({ data, currentRange }: ItemPopularityChartP
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
+      <CardContent className="flex-1 pb-4">
+        <ChartContainer config={chartConfig} className="mx-auto min-h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <ChartTooltip
@@ -94,13 +94,13 @@ export function ItemPopularityChart({ data, currentRange }: ItemPopularityChartP
                 dataKey="value"
                 nameKey="name"
                 innerRadius={60}
-                strokeWidth={5}
+                paddingAngle={2}
               >
                 {data.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Pie>
-              <ChartLegend content={<ChartLegendContent className="-translate-y-2" />} />
+              <ChartLegend content={<ChartLegendContent className="mt-4" />} />
             </PieChart>
           </ResponsiveContainer>
         </ChartContainer>
