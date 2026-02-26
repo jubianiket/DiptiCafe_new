@@ -3,8 +3,20 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import type { OrderStatus, DailySummary, Order } from '@/lib/types';
+import type { OrderStatus, DailySummary, Order, RevenueRange, RevenueDataPoint } from '@/lib/types';
 import { adjustInventoryStock } from './inventory';
+import { 
+  startOfDay, 
+  subDays, 
+  subMonths, 
+  subYears, 
+  format, 
+  isSameDay, 
+  isSameMonth, 
+  isSameYear,
+  startOfMonth,
+  startOfYear
+} from 'date-fns';
 
 // Schema for items coming from the form
 const formItemSchema = z.object({
@@ -178,48 +190,59 @@ export async function getDailySummary(): Promise<DailySummary> {
   return { total_orders: count ?? 0, total_revenue };
 }
 
-export async function getWeeklyRevenue(): Promise<{ date: string; revenue: number }[]> {
+export async function getRevenueReport(range: RevenueRange = '5days'): Promise<RevenueDataPoint[]> {
   const supabase = getSupabaseClient();
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(today.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
+  const now = new Date();
+  let startDate: Date;
+
+  if (range === '5days') startDate = subDays(startOfDay(now), 4);
+  else if (range === '15days') startDate = subDays(startOfDay(now), 14);
+  else if (range === 'month') startDate = subMonths(startOfMonth(now), 11);
+  else if (range === 'year') startDate = subYears(startOfYear(now), 4);
+  else startDate = subDays(startOfDay(now), 4);
 
   const { data, error } = await supabase
     .from('orders')
     .select('created_at, total_amount')
     .eq('status', 'paid')
-    .gte('created_at', sevenDaysAgo.toISOString())
-    .lte('created_at', today.toISOString())
+    .gte('created_at', startDate.toISOString())
     .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('Failed to fetch weekly revenue:', error);
+    console.error('Failed to fetch revenue report:', error);
     return [];
   }
 
-  // Create map for all 7 days to ensure we have entries for days with zero revenue
-  const dailyData: Record<string, number> = {};
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(sevenDaysAgo);
-    d.setDate(sevenDaysAgo.getDate() + i);
-    const dateStr = d.toISOString().split('T')[0];
-    dailyData[dateStr] = 0;
+  const results: RevenueDataPoint[] = [];
+
+  if (range === '5days' || range === '15days') {
+    const days = range === '5days' ? 5 : 15;
+    for (let i = 0; i < days; i++) {
+      const d = subDays(startOfDay(now), days - 1 - i);
+      const total = data
+        ?.filter(o => isSameDay(new Date(o.created_at), d))
+        .reduce((sum, o) => sum + o.total_amount, 0) || 0;
+      results.push({ date: d.toISOString(), revenue: total });
+    }
+  } else if (range === 'month') {
+    for (let i = 0; i < 12; i++) {
+      const d = subMonths(startOfMonth(now), 11 - i);
+      const total = data
+        ?.filter(o => isSameMonth(new Date(o.created_at), d))
+        .reduce((sum, o) => sum + o.total_amount, 0) || 0;
+      results.push({ date: d.toISOString(), revenue: total });
+    }
+  } else if (range === 'year') {
+    for (let i = 0; i < 5; i++) {
+      const d = subYears(startOfYear(now), 4 - i);
+      const total = data
+        ?.filter(o => isSameYear(new Date(o.created_at), d))
+        .reduce((sum, o) => sum + o.total_amount, 0) || 0;
+      results.push({ date: d.toISOString(), revenue: total });
+    }
   }
 
-  data?.forEach(order => {
-    const dateStr = new Date(order.created_at).toISOString().split('T')[0];
-    if (dailyData[dateStr] !== undefined) {
-      dailyData[dateStr] += order.total_amount;
-    }
-  });
-
-  return Object.entries(dailyData).map(([date, revenue]) => ({
-    date,
-    revenue
-  }));
+  return results;
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {

@@ -53,3 +53,10 @@ export interface InventoryItem {
   updated_at: string;
   low_stock_threshold: number | null;
 }
+
+export type RevenueRange = '5days' | '15days' | 'month' | 'year';
+
+export interface RevenueDataPoint {
+  date: string;
+  revenue: number;
+}
