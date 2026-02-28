@@ -116,7 +116,11 @@ export function OrderCard({ order, role, menuItems }: OrderCardProps) {
     message += `*Total Amount: Rs. ${order.total_amount.toFixed(2)}*\n\n`;
     
     if (qrCodeUrl) {
-      message += `Scan to Pay: ${qrCodeUrl}\n\n`;
+      if (qrCodeUrl.startsWith('data:')) {
+        message += `Scan the QR code available at the counter or provided by the staff to pay.\n\n`;
+      } else {
+        message += `Scan to Pay: ${qrCodeUrl}\n\n`;
+      }
     }
     
     message += `Thank you for visiting!`;
