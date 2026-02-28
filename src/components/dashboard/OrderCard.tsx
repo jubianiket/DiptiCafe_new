@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { updateOrderStatus, deleteOrder } from '@/lib/actions/orders';
+import { getSetting } from '@/lib/actions/settings';
 import type { Order, UserRole, OrderStatus, MenuItem } from '@/lib/types';
 import {
   Hourglass,
@@ -23,6 +24,7 @@ import {
   CircleDollarSign,
   Trash2,
   Loader,
+  Share2,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -99,6 +101,30 @@ export function OrderCard({ order, role, menuItems }: OrderCardProps) {
     });
   };
 
+  const handleShareOnWhatsApp = async () => {
+    const qrCodeUrl = await getSetting('qr_code_url');
+    
+    let message = `*Dipti's Cafe Bill*\n`;
+    message += `Order for: ${order.customer_name || `Table ${order.table_no}`}\n`;
+    message += `--------------------------\n`;
+    
+    order.items.forEach(item => {
+      message += `- ${item.quantity}x ${item.item_name}: Rs. ${(item.price * item.quantity).toFixed(2)}\n`;
+    });
+    
+    message += `--------------------------\n`;
+    message += `*Total Amount: Rs. ${order.total_amount.toFixed(2)}*\n\n`;
+    
+    if (qrCodeUrl) {
+      message += `Scan to Pay: ${qrCodeUrl}\n\n`;
+    }
+    
+    message += `Thank you for visiting!`;
+    
+    const whatsappUrl = `https://wa.me/${order.phone_number?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleDelete = () => {
     startTransition(async () => {
       const result = await deleteOrder(order.id);
@@ -153,9 +179,14 @@ export function OrderCard({ order, role, menuItems }: OrderCardProps) {
           </Button>
         )}
         {order.status === 'delivered' && (
-          <Button onClick={() => handleUpdateStatus('paid')} disabled={isPending} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-            {isPending ? <Loader className="animate-spin" /> : 'Mark Paid'}
-          </Button>
+          <div className="flex w-full gap-2">
+            <Button onClick={() => handleUpdateStatus('paid')} disabled={isPending} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90">
+                {isPending ? <Loader className="animate-spin" /> : 'Mark Paid'}
+            </Button>
+            <Button variant="outline" size="icon" onClick={handleShareOnWhatsApp} title="Share Bill on WhatsApp">
+                <Share2 className="h-4 w-4" />
+            </Button>
+          </div>
         )}
         
         {order.status !== 'paid' && <EditOrderSheet order={order} menuItems={menuItems} />}

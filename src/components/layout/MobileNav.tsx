@@ -9,6 +9,7 @@ import {
   Gamepad2,
   Warehouse,
   History,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,9 +20,22 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+import { getRole } from '@/lib/actions/auth';
+import type { UserRole } from '@/lib/types';
 
 export function MobileNav() {
     const pathname = usePathname();
+    const [role, setRole] = useState<UserRole>('Staff');
+
+    useEffect(() => {
+      async function fetchRole() {
+        const currentRole = await getRole();
+        setRole(currentRole);
+      }
+      fetchRole();
+    }, []);
+
     const navItems = [
         { href: '/', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/menu', label: 'Menu', icon: BookOpen },
@@ -29,6 +43,11 @@ export function MobileNav() {
         { href: '/inventory', label: 'Inventory', icon: Warehouse },
         { href: '/history', label: 'History', icon: History },
     ];
+
+    if (role === 'Admin') {
+      navItems.push({ href: '/settings', label: 'Settings', icon: Settings });
+    }
+
     return (
         <Sheet>
             <SheetTrigger asChild>

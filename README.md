@@ -9,7 +9,11 @@ This is a full-stack cafe order management web application built with Next.js, S
 - **Real-time Dashboard**: View all orders and filter them by status (Pending, Delivered, Paid).
 - **Daily Sales Summary**: Track total orders and revenue for the day.
 - **Responsive UI**: Mobile-friendly design for waiters using tablets or phones.
-- **Modern Tech Stack**: Built with Next.js App Router, Server Components, and Server Actions.
+- **Voice Orders**: Quick order taking using AI-powered voice recognition.
+- **Inventory Sync**: Automatic stock adjustments based on orders.
+- **WhatsApp Sharing**: Share bills and payment QR codes directly with customers.
+
+---
 
 ## Tech Stack
 
@@ -17,7 +21,7 @@ This is a full-stack cafe order management web application built with Next.js, S
 - **Database**: [Supabase](https://supabase.io/) (PostgreSQL)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
-- **Forms**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
+- **AI**: [Genkit](https://js.flare.dev/genkit/) & Gemini
 
 ---
 
@@ -48,7 +52,7 @@ npm install
 
 1.  **Create a new project** on [Supabase](https://app.supabase.com).
 2.  Navigate to the **SQL Editor** in your Supabase project dashboard.
-3.  Run the following SQL queries to create the necessary tables (`orders`, `order_items`, `menu_items`, `play_sessions`, `inventory`).
+3.  Run the following SQL queries to create the necessary tables.
 
     ```sql
     -- Table to store orders
@@ -101,6 +105,12 @@ npm install
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- Table for global settings
+    CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    );
+
     -- Function to update updated_at timestamp on inventory table
     CREATE OR REPLACE FUNCTION trigger_set_timestamp()
     RETURNS TRIGGER AS $$
@@ -134,15 +144,8 @@ npm install
     NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-public-key
     ```
 
-    **Note**: The app uses Row Level Security (RLS). For simplicity in this setup, we use the `anon` key, which is safe for public exposure as long as RLS is enabled on your tables.
-
 ### 6. Run the Development Server
 
 ```bash
 npm run dev
-```
-
-Open [http://localhost:9002](http://localhost:9002) (or the specified port) in your browser to see the application.
-
-You can use the Role Switcher in the header to toggle between "Staff" and "Admin" views to see the different UI and permissions.
 ```

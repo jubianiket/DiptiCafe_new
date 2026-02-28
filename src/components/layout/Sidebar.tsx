@@ -8,10 +8,16 @@ import {
   Gamepad2,
   Warehouse,
   History,
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { UserRole } from '@/lib/types';
 
-export function Sidebar() {
+interface SidebarProps {
+  role?: UserRole;
+}
+
+export function Sidebar({ role = 'Staff' }: SidebarProps) {
   const pathname = usePathname();
   const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -20,6 +26,10 @@ export function Sidebar() {
     { href: '/inventory', label: 'Inventory', icon: Warehouse },
     { href: '/history', label: 'History', icon: History },
   ];
+
+  if (role === 'Admin') {
+    navItems.push({ href: '/settings', label: 'Settings', icon: Settings });
+  }
 
   return (
     <div className="hidden border-r bg-card md:block">
