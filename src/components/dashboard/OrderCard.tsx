@@ -116,16 +116,39 @@ export function OrderCard({ order, role, menuItems }: OrderCardProps) {
     message += `*Total Amount: Rs. ${order.total_amount.toFixed(2)}*\n\n`;
     
     if (qrCodeUrl) {
-      if (qrCodeUrl.startsWith('data:')) {
-        message += `Scan the QR code available at the counter or provided by the staff to pay.\n\n`;
-      } else {
+      if (!qrCodeUrl.startsWith('data:')) {
         message += `Scan to Pay: ${qrCodeUrl}\n\n`;
+      } else {
+        message += `Scan the attached QR code to pay.\n\n`;
       }
     }
     
     message += `Thank you for visiting!`;
+
+    // Attempt to use Web Share API for actual file attachment (best for Mobile)
+    if (navigator.share && qrCodeUrl && qrCodeUrl.startsWith('data:')) {
+        try {
+            // Convert Base64 data URI to a File object
+            const response = await fetch(qrCodeUrl);
+            const blob = await response.blob();
+            const file = new File([blob], 'payment-qr.jpg', { type: blob.type });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: "Dipti's Cafe Bill",
+                    text: message,
+                    files: [file],
+                });
+                return; // Shared successfully via system sheet
+            }
+        } catch (err) {
+            console.error("Web Share API failed, falling back to URL:", err);
+        }
+    }
     
-    const whatsappUrl = `https://wa.me/${order.phone_number?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(message)}`;
+    // Fallback for desktop or unsupported browsers (Text-only URL)
+    const phone = order.phone_number?.replace(/\D/g, '') || '';
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
