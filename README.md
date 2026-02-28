@@ -105,7 +105,7 @@ npm install
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
-    -- Table for global settings
+    -- Table for global settings (QR codes, etc.)
     CREATE TABLE settings (
         key TEXT PRIMARY KEY,
         value TEXT
